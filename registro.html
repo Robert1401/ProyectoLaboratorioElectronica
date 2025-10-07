@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro de Alumno</title>
+  <link rel="stylesheet" href="registro.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <div class="login-container">
+    <!-- Logos superiores -->
+    <div class="logos">
+      <img src="logo1.png" alt="TecNM" class="logo-left">
+      <img src="escudo.png" alt="Universidad" class="logo-right">
+    </div>
+
+    <!-- Logo central -->
+    <div class="logo-center">
+      <img src="Burrito.png" alt="Logo Burro">
+    </div>
+
+    <!-- Título -->
+    <h2>Registro de Alumno</h2>
+
+    <!-- Formulario de Registro -->
+   <form id="registroForm">
+  <div class="input-container">
+    <i class="fa fa-id-card"></i>
+    <input type="number" id="numeroControl" name="numeroControl" placeholder="Número de Control" class="input-field" required>
+  </div>
+
+  <div class="input-container">
+    <i class="fa fa-user"></i>
+    <input type="text" id="nombre" name="nombre" placeholder="Nombre" class="input-field" required>
+  </div>
+
+  <div class="input-container">
+    <i class="fa fa-user"></i>
+    <input type="text" id="apellidoPaterno" name="apellidoPaterno" placeholder="Apellido Paterno" class="input-field" required>
+  </div>
+
+  <div class="input-container">
+    <i class="fa fa-user"></i>
+    <input type="text" id="apellidoMaterno" name="apellidoMaterno" placeholder="Apellido Materno" class="input-field" required>
+  </div>
+
+  <!-- Carrera -->
+  <div class="input-container">
+    <select id="carrera" name="carrera" class="input-field" required>
+      <option value="">Selecciona la Carrera</option>
+      <option value="IE">Ingeniería Electrónica</option>
+      <option value="IM">Ingeniería en Mecatrónica</option>
+      <option value="ISC">Ingeniería en Sistemas Computacionales</option>
+      <option value="IMC">Ingeniería Mecánica</option>
+      <option value="IMAT">Ingeniería en Materiales</option>
+    </select>
+  </div>
+
+  <!-- Materia -->
+  <div class="input-container">
+    <select id="materia" name="materia" class="input-field" required>
+      <option value="">Selecciona la Materia</option>
+    </select>
+  </div>
+
+  <div class="input-container">
+    <i class="fa fa-lock"></i>
+    <input type="password" id="clave" name="clave" placeholder="Contraseña" class="input-field" required>
+  </div>
+
+  <!-- Botón de Registro -->
+  <button type="submit" class="btn-submit">Registrarse</button>
+</form>
+
+
+    <p class="register-text">
+      ¿Ya tienes una cuenta? <a href="index.html">Inicia sesión aquí</a>
+    </p>
+  </div>
+
+  <!-- Script externo -->
+  <script src="registro.js"></script>
+</body>
+</html>

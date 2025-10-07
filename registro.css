@@ -1,4 +1,4 @@
-/* Fondo con gradiente animado */
+/* ====== FONDO ANIMADO ====== */
 body {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
@@ -17,16 +17,16 @@ body {
   100% { background-position: 0% 50%; }
 }
 
-/* Caja blanca con efecto vidrio */
+/* ====== CONTENEDOR PRINCIPAL (más pequeño) ====== */
 .login-container {
   background: rgba(255, 255, 255, 0.95);
-  padding: 35px 30px;
-  border-radius: 20px;
+  padding: 20px 25px;          /* Reducido */
+  border-radius: 18px;
   text-align: center;
-  width: 360px;
+  width: 280px;                /* Más angosto */
   max-width: 90%;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 15px 40px rgba(0,0,0,0.35);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   animation: aparecer 1s ease;
 }
 
@@ -35,72 +35,72 @@ body {
   to { transform: scale(1); opacity: 1; }
 }
 
-/* Logos superiores */
+/* ====== LOGOS ====== */
 .logos {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
 .logos img {
-  height: 70px;
-  max-width: 45%;
+  height: 55px; /* Más pequeños */
+  max-width: 40%;
   object-fit: contain;
-  transition: transform 0.5s ease;
+  transition: transform 0.4s ease;
 }
 
 .logos img:hover {
-  transform: rotateY(15deg) scale(1.1);
+  transform: scale(1.08);
 }
 
-/* Logo central */
+/* ====== LOGO CENTRAL ====== */
 .logo-center {
   display: flex;
   justify-content: center;
-  margin: 20px 0 15px 0;
+  margin: 10px 0;
 }
 
 .logo-center img {
-  height: 100px;
+  height: 75px; /* reducido */
   width: auto;
   border-radius: 50%;
-  padding: 4px;
+  padding: 3px;
   background: white;
-  box-shadow: 0 0 18px rgba(128,0,0,0.7);
+  box-shadow: 0 0 15px rgba(128, 0, 0, 0.7);
   animation: latido 2s infinite, glow 3s infinite alternate;
 }
 
 @keyframes latido {
   0%, 50%, 100% { transform: scale(1); }
-  25%, 75% { transform: scale(1.06); }
+  25%, 75% { transform: scale(1.05); }
 }
 
 @keyframes glow {
-  from { box-shadow: 0 0 12px rgba(128,0,0,0.5); }
-  to { box-shadow: 0 0 28px rgba(128,0,0,0.9); }
+  from { box-shadow: 0 0 10px rgba(128, 0, 0, 0.5); }
+  to { box-shadow: 0 0 25px rgba(128, 0, 0, 0.9); }
 }
 
-/* Título */
+/* ====== TÍTULO ====== */
 h2 {
   color: #800000;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   font-weight: bold;
-  font-size: 20px;
-  letter-spacing: 1px;
+  font-size: 18px; /* reducido */
+  letter-spacing: 0.5px;
 }
 
-/* Formulario */
+/* ====== FORMULARIO ====== */
 form {
   display: flex;
   flex-direction: column;
   text-align: left;
 }
 
-/* Input con icono */
+/* ====== INPUTS ====== */
 .input-container {
   position: relative;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .input-container i {
@@ -109,52 +109,71 @@ form {
   left: 10px;
   transform: translateY(-50%);
   color: #800000;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 input {
   width: 100%;
-  padding: 8px 12px 8px 36px;
+  padding: 7px 10px 7px 32px;
   border: 1px solid #ccc;
-  border-radius: 12px;
-  font-size: 15px;
-  line-height: 1.4;
+  border-radius: 10px;
+  font-size: 13px;
   transition: all 0.3s ease;
   box-sizing: border-box;
 }
 
 input:focus {
   border-color: #800000;
-  box-shadow: 0 0 10px rgba(128,0,0,0.5);
+  box-shadow: 0 0 8px rgba(128, 0, 0, 0.4);
   outline: none;
 }
 
-/* Botón */
+/* ====== SELECTS (Carrera y Materia) ====== */
+select {
+  width: 100%;
+  padding: 7px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background: white;
+  font-size: 13px;
+  color: #333;
+  margin-bottom: 10px;
+  transition: box-shadow 0.3s ease;
+}
+
+select:focus {
+  border-color: #800000;
+  box-shadow: 0 0 8px rgba(128, 0, 0, 0.4);
+  outline: none;
+}
+
+/* ====== BOTÓN ====== */
 button {
   background: linear-gradient(45deg, #800000, #b00000);
   color: white;
   border: none;
-  padding: 12px;
-  border-radius: 25px;
-  font-size: 16px;
+  padding: 9px;
+  border-radius: 20px;
+  font-size: 14px;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
   width: 100%;
+  margin-top: 6px;
 }
 
 button:hover {
   background: linear-gradient(45deg, #b00000, #ff1a1a);
-  transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 5px 18px rgba(128,0,0,0.6);
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 5px 15px rgba(128, 0, 0, 0.6);
 }
 
-/* Enlace para registrarse */
+/* ====== TEXTO FINAL ====== */
 .register-text {
-  margin-top: 18px;
+  margin-top: 12px;
   text-align: center;
   color: #333;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .register-text a {
@@ -169,43 +188,23 @@ button:hover {
   text-decoration: underline;
 }
 
-/* Barra de pestañas (solo Alumnos y Auxiliar) */
-.tab-container {
-  position: relative;
-  display: flex;
-  justify-content: space-between;
-  background: #f0f0f0;
-  border-radius: 30px;
-  margin: 15px auto 25px auto;
-  width: 90%;
-  max-width: 280px;
-  overflow: hidden;
-  box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
-}
 
-.tab {
-  flex: 1;
-  text-align: center;
-  padding: 10px 0;
-  font-weight: bold;
-  color: #800000;
-  cursor: pointer;
-  transition: color 0.3s ease;
-  z-index: 2;
-}
+/* ====== RESPONSIVE ====== */
+@media (max-width: 420px) {
+  .login-container {
+    width: 300px;
+    padding: 25px;
+  }
 
-.tab.active {
-  color: white;
-}
+  .logos img {
+    height: 50px;
+  }
 
-.tab-indicator {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 100%;
-  width: 50%;
-  background: linear-gradient(45deg, #800000, #b00000);
-  border-radius: 30px;
-  transition: transform 0.3s ease;
-  z-index: 1;
+  .logo-center img {
+    height: 75px;
+  }
+
+  h2 {
+    font-size: 18px;
+  }
 }

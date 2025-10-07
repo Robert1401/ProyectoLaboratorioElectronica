@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carreras</title>
+  <link rel="stylesheet" href="carreras.css">
+</head>
+<body>
+  <div class="contenedor">
+    <header>
+      <img src="logo1.png" alt="Logo TecNM" class="logo izquierda">
+      <h1>Carreras</h1>
+      <img src="escudo.png" alt="Escudo" class="logo derecha">
+    </header>
+
+    <main>
+      <section class="formulario">
+        <label for="nombre">Nombre:</label>
+        <input type="text" id="nombre" name="nombre">
+
+        <label for="clave">Clave:</label>
+        <input type="text" id="clave" name="clave">
+      </section>
+
+      <section class="tabla">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Clave</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td></td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+
+    <footer>
+      <div class="botones">
+        <button class="btn rojo">Agregar</button>
+        <button class="btn rojo">Actualizar</button>
+        <button class="btn rojo">Eliminar</button>
+      </div>
+
+      <div class="iconos">
+        <button class="icono inicio" onclick="irInicio()">&#x2302;</button>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    function irInicio() {
+      window.location.href = "auxiliar.html";
+    }
+  </script>
+</body>
+</html>
