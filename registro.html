@@ -9,22 +9,21 @@
 </head>
 <body>
   <div class="login-container">
-    <!-- Logos superiores -->
     <div class="logos">
       <img src="logo1.png" alt="TecNM" class="logo-left">
       <img src="escudo.png" alt="Universidad" class="logo-right">
     </div>
 
-    <!-- Logo central -->
     <div class="logo-center">
       <img src="Burrito.png" alt="Logo Burro">
     </div>
 
-    <!-- Título -->
     <h2>Registro de Alumno</h2>
 
-    <!-- Formulario de Registro -->
-   <form id="registroForm">
+<!-- Mensaje dinámico que se muestra arriba del formulario -->
+<p id="mensaje" class="mensaje"></p>
+
+<form id="registroForm">
   <div class="input-container">
     <i class="fa fa-id-card"></i>
     <input type="number" id="numeroControl" name="numeroControl" placeholder="Número de Control" class="input-field" required>
@@ -45,19 +44,14 @@
     <input type="text" id="apellidoMaterno" name="apellidoMaterno" placeholder="Apellido Materno" class="input-field" required>
   </div>
 
-  <!-- Carrera -->
   <div class="input-container">
     <select id="carrera" name="carrera" class="input-field" required>
       <option value="">Selecciona la Carrera</option>
-      <option value="IE">Ingeniería Electrónica</option>
-      <option value="IM">Ingeniería en Mecatrónica</option>
-      <option value="ISC">Ingeniería en Sistemas Computacionales</option>
-      <option value="IMC">Ingeniería Mecánica</option>
-      <option value="IMAT">Ingeniería en Materiales</option>
+      <option value="1">Ingeniería Electrónica</option>
+      <option value="2">Ingeniería en Sistemas Computacionales</option>
     </select>
   </div>
 
-  <!-- Materia -->
   <div class="input-container">
     <select id="materia" name="materia" class="input-field" required>
       <option value="">Selecciona la Materia</option>
@@ -66,20 +60,26 @@
 
   <div class="input-container">
     <i class="fa fa-lock"></i>
-    <input type="password" id="clave" name="clave" placeholder="Contraseña" class="input-field" required>
+    <input 
+      type="text" 
+      id="clave" 
+      name="clave" 
+      placeholder="Contraseña (máx. 10 caracteres)" 
+      class="input-field" 
+      maxlength="10" 
+      pattern="[A-Za-z0-9]{1,10}" 
+      title="Máximo 10 caracteres, solo letras o números"
+      required>
   </div>
 
-  <!-- Botón de Registro -->
   <button type="submit" class="btn-submit">Registrarse</button>
 </form>
-
 
     <p class="register-text">
       ¿Ya tienes una cuenta? <a href="index.html">Inicia sesión aquí</a>
     </p>
   </div>
 
-  <!-- Script externo -->
   <script src="registro.js"></script>
 </body>
 </html>

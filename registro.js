@@ -1,86 +1,66 @@
-document.getElementById("registroForm").addEventListener("submit", function(event) {
-  event.preventDefault();
+document.addEventListener("DOMContentLoaded", () => {
+  const carreraSelect = document.getElementById("carrera");
+  const materiaSelect = document.getElementById("materia");
+  const mensaje = document.getElementById("mensaje");
 
-  const numeroControl = document.getElementById("numeroControl").value.trim();
-  const nombre = document.getElementById("nombre").value.trim();
-  const apellidoPaterno = document.getElementById("apellidoPaterno").value.trim();
-  const apellidoMaterno = document.getElementById("apellidoMaterno").value.trim();
-  const materia = document.getElementById("materia").value.trim();
-  const carrera = document.getElementById("carrera").value.trim();
-  const clave = document.getElementById("clave").value.trim();
+  const materiasPorCarrera = {
+    1: [
+      { valor: "CE101", nombre: "Circuitos Eléctricos I" },
+      { valor: "CE102", nombre: "Circuitos Eléctricos II" }
+    ],
+    2: [
+      { valor: "FD101", nombre: "Fundamentos Eléctricos" },
+      { valor: "AD102", nombre: "Aplicaciones Digitales" }
+    ]
+  };
 
-  if (!numeroControl || !nombre || !apellidoPaterno || !apellidoMaterno || !materia || !carrera || !clave) {
-    alert("⚠️ Por favor, complete todos los campos.");
-    return;
-  }
-
-  // Enviar los datos al servidor
-  fetch('registro.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      numeroControl,
-      nombre,
-      apellidoPaterno,
-      apellidoMaterno,
-      materia,
-      carrera,
-      clave
-    })
-  })
-  .then(response => response.json())
-  .then(data => {
-    alert(data.message);
-    if (data.success) {
-      // Redirigir al login
-      window.location.href = 'index.html';
+  carreraSelect.addEventListener("change", () => {
+    const carreraID = carreraSelect.value;
+    materiaSelect.innerHTML = '<option value="">Selecciona la Materia</option>';
+    if (materiasPorCarrera[carreraID]) {
+      materiasPorCarrera[carreraID].forEach(m => {
+        const option = document.createElement("option");
+        option.value = m.valor;
+        option.textContent = m.nombre;
+        materiaSelect.appendChild(option);
+      });
     }
-  })
-  .catch(error => {
-    console.error('❌ Error al registrar:', error);
-    alert("Ocurrió un error al registrar. Intente nuevamente.");
   });
-});
 
-const materiasPorCarrera = {
-  IE: [
-    { valor: "CEI", nombre: "Circuitos Eléctricos I" },
-    { valor: "CEII", nombre: "Circuitos Eléctricos II" },
-    { valor: "EA", nombre: "Electrónica Analógica" },
-    { valor: "EM", nombre: "Electromagnetismo" },
-    { valor: "ME", nombre: "Medidas / Mediciones Eléctricas" }
-  ],
-  IM: [
-    { valor: "INST", nombre: "Instrumentación" },
-    { valor: "ACE", nombre: "Análisis de Circuitos Eléctricos" }
-  ],
-  ISC: [
-    { valor: "FEAD", nombre: "Fundamentos Eléctricos y Aplicaciones Digitales" }
-  ],
-  IMC: [
-    { valor: "SE", nombre: "Sistemas Electrónicos" },
-    { valor: "MF", nombre: "Mecánica de Fluidos / Termodinámica" }
-  ],
-  IMAT: [
-    { valor: "EMO", nombre: "Electricidad, magnetismo y óptica" },
-    { valor: "TA", nombre: "Técnicas de análisis" },
-    { valor: "FES", nombre: "Física del estado sólido" }
-  ]
-};
+  document.getElementById("registroForm").addEventListener("submit", (e) => {
+    e.preventDefault();
 
-const carreraSelect = document.getElementById("carrera");
-const materiaSelect = document.getElementById("materia");
+    const clave = document.getElementById("clave").value.trim();
+    if (!/^[A-Za-z0-9]{1,10}$/.test(clave)) {
+      mensaje.textContent = "⚠️ La contraseña debe tener máximo 10 caracteres alfanuméricos.";
+      mensaje.className = "mensaje error";
+      return;
+    }
 
-carreraSelect.addEventListener("change", function() {
-  const carrera = this.value;
-  materiaSelect.innerHTML = '<option value="">Selecciona la Materia</option>';
+    const datos = {
+      numeroControl: document.getElementById("numeroControl").value.trim(),
+      nombre: document.getElementById("nombre").value.trim(),
+      apellidoPaterno: document.getElementById("apellidoPaterno").value.trim(),
+      apellidoMaterno: document.getElementById("apellidoMaterno").value.trim(),
+      carrera: document.getElementById("carrera").value,
+      materia: document.getElementById("materia").value,
+      clave: clave
+    };
 
-  if (materiasPorCarrera[carrera]) {
-    materiasPorCarrera[carrera].forEach(m => {
-      const option = document.createElement("option");
-      option.value = m.valor;
-      option.textContent = m.nombre;
-      materiaSelect.appendChild(option);
+    fetch("registro.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(datos)
+    })
+    .then(resp => resp.json())
+    .then(data => {
+      mensaje.textContent = data.message;
+      mensaje.className = data.success ? "mensaje exito" : "mensaje error";
+      if (data.success) setTimeout(() => window.location.href = "index.html", 1500);
+    })
+    .catch(() => {
+      mensaje.textContent = "❌ Error al conectar con el servidor.";
+      mensaje.className = "mensaje error";
     });
-  }
+  });
 });
