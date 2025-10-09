@@ -1,7 +1,10 @@
 # ⚙️ Proyecto de Gestión del Laboratorio de Electrónica
 
-Este proyecto tiene como objetivo administrar el préstamo, registro y control de materiales en el **Laboratorio de Electrónica Analógica** de la universidad.  
-El sistema incluye un **backend** (servidor y base de datos) y un **frontend** (interfaz visual para los usuarios).
+Este proyecto tiene como objetivo administrar el **préstamo, registro y control de materiales** en el **Laboratorio de Electrónica Analógica** de la universidad.  
+El sistema está dividido en dos partes principales:
+
+- 🧠 **Backend:** Lógica del servidor, conexión a base de datos y controladores.  
+- 🎨 **Frontend:** Interfaz visual interactiva para los usuarios.
 
 ---
 
@@ -36,32 +39,29 @@ ProyectoLaboratorioElectronica/
 │
 └── README.md
 
-
 ---
 
 ## 🖥️ Tecnologías Utilizadas
 
 ### **Backend**
-- PHP 8+
-- MySQL / MariaDB
-- Apache (XAMPP o WAMP)
+- 🐘 PHP 8+
+- 💾 MySQL / MariaDB
+- 🌐 Apache (XAMPP o WAMP)
 
 ### **Frontend**
-- HTML5, CSS3, JavaScript
+- 🧱 HTML5  
+- 🎨 CSS3  
+- ⚡ JavaScript
 
 ### **Control de versiones**
-- Git y GitHub
+- 🔁 Git y GitHub
 
 ---
 
 ## 🧠 Instalación (Local)
 
-1. Clonar el repositorio:  
-   ```bash
-   git clone https://github.com/Robert1401/ProyectoLaboratorioElectronica.git
-   cd ProyectoLaboratorioElectronica
+### 1️⃣ Clonar el repositorio
 
-Subir tus cambios
-git add .
-git commit -m "Actualización en formulario de registro"
-git push origin nombre_de_tu_rama
+```bash
+git clone https://github.com/Robert1401/ProyectoLaboratorioElectronica.git
+cd ProyectoLaboratorioElectronica
