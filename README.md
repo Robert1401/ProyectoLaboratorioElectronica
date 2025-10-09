@@ -60,3 +60,8 @@ ProyectoLaboratorioElectronica/
    ```bash
    git clone https://github.com/Robert1401/ProyectoLaboratorioElectronica.git
    cd ProyectoLaboratorioElectronica
+
+Subir tus cambios
+git add .
+git commit -m "Actualización en formulario de registro"
+git push origin nombre_de_tu_rama
