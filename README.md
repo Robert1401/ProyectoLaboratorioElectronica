@@ -65,3 +65,4 @@ ProyectoLaboratorioElectronica/
 ```bash
 git clone https://github.com/Robert1401/ProyectoLaboratorioElectronica.git
 cd ProyectoLaboratorioElectronica
+otro cambio de prueba
