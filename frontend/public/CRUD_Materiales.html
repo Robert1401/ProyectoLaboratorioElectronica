@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD Material</title>
+    <link rel="stylesheet" href="CRUD_Materiales.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="logo_tec.png" alt="Logo TecNM" class="logo">
+            <h1>Agregar Material</h1>
+            <img src="logo_escudo.png" alt="Escudo" class="logo">
+        </header>
+
+        <div class="content">
+            <div class="form-container">
+                <label for="nombre">Nombre:</label>
+                <input type="text" id="nombre" placeholder="Ingrese el nombre del material">
+
+                <label for="clave">Clave:</label>
+                <input type="text" id="clave" placeholder="Ingrese la clave del material">
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Clave</th>
+                            <th>Cantidad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Ejemplo</td>
+                            <td>001</td>
+                            <td>10</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button class="guardar">Guardar</button>
+            <button class="actualizar">Actualizar</button>
+            <button class="eliminar">Eliminar</button>
+        </div>
+
+        <div class="navigation">
+            <!-- Botón de inicio -->
+            <button class="home" title="Inicio" onclick="window.location.href='auxiliar.html'">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</body>
+</html>
+

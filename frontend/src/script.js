@@ -45,7 +45,7 @@ loginForm.addEventListener("submit", function(event) {
     // Validación de rol antes de enviar
     if (rol === "alumnos") {
         if (!/^\d{4,}$/.test(usuario)) {
-            alert("❌ Solo se permiten alumnos en esta pestaña.");
+            alert("❌ Solo se permiten usuarios registrados en esta pestaña.");
             return;
         }
         usuario = parseInt(usuario, 10); // enviar como número
