@@ -55,6 +55,140 @@
             </button>
         </div>
     </div>
+    <script>
+async function cargarTabla() {
+    const res = await fetch("obtener_datos.php");
+    const data = await res.json();
+
+    const tbody = document.querySelector("tbody");
+    tbody.innerHTML = "";
+
+    data.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${row.nombre}</td>
+            <td>${row.clave}</td>
+            <td>${row.cantidad}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+document.querySelector(".guardar").addEventListener("click", async () => {
+    const nombre = document.getElementById("nombre").value;
+    const clave = document.getElementById("clave").value;
+
+    await fetch("operaciones.php", {
+        method: "POST",
+        body: new URLSearchParams({
+            accion: "insertar",
+            nombre,
+            clave,
+            cantidad: 0
+        })
+    });
+    cargarTabla();
+});
+
+window.onload = cargarTabla;
+</script>
+<script>
+let idSeleccionado = null;
+
+async function cargarTabla() {
+    const res = await fetch("obtener_datos.php");
+    const data = await res.json();
+
+    const tbody = document.querySelector("tbody");
+    tbody.innerHTML = "";
+
+    data.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${row.nombre}</td>
+            <td>${row.clave}</td>
+            <td>${row.cantidad}</td>
+        `;
+        tr.addEventListener("click", () => seleccionarFila(row));
+        tbody.appendChild(tr);
+    });
+
+    console.log("Tabla cargada correctamente con " + data.length + " registros");
+}
+
+function seleccionarFila(row) {
+    idSeleccionado = row.id;
+    document.getElementById("nombre").value = row.nombre;
+    document.getElementById("clave").value = row.clave;
+    console.log("Fila seleccionada:", row);
+}
+
+// Función genérica para enviar peticiones
+async function enviarAccion(accion, datos) {
+    const res = await fetch("operaciones.php", {
+        method: "POST",
+        body: new URLSearchParams({ accion, ...datos })
+    });
+    const respuesta = await res.json();
+    console.log(respuesta.mensaje);
+}
+
+document.querySelector(".guardar").addEventListener("click", async () => {
+    const nombre = document.getElementById("nombre").value;
+    const clave = document.getElementById("clave").value;
+
+    if (!nombre || !clave) {
+        console.warn("Por favor llena todos los campos.");
+        return;
+    }
+
+    await enviarAccion("insertar", { nombre, clave, cantidad: 0 });
+    limpiarFormulario();
+    cargarTabla();
+});
+
+document.querySelector(".actualizar").addEventListener("click", async () => {
+    if (!idSeleccionado) {
+        console.warn("Selecciona un registro primero.");
+        return;
+    }
+
+    const nombre = document.getElementById("nombre").value;
+    const clave = document.getElementById("clave").value;
+
+    await enviarAccion("actualizar", { id: idSeleccionado, nombre, clave, cantidad: 0 });
+    limpiarFormulario();
+    cargarTabla();
+});
+
+document.querySelector(".eliminar").addEventListener("click", async () => {
+    if (!idSeleccionado) {
+        console.warn("Selecciona un registro para eliminar.");
+        return;
+    }
+
+    if (confirm("¿Seguro que deseas eliminar este registro?")) {
+        await enviarAccion("eliminar", { id: idSeleccionado });
+        limpiarFormulario();
+        cargarTabla();
+    }
+});
+
+function limpiarFormulario() {
+    document.getElementById("nombre").value = "";
+    document.getElementById("clave").value = "";
+    idSeleccionado = null;
+}
+
+window.onload = async () => {
+    console.log("Verificando conexión con la base de datos...");
+    const res = await fetch("conexion.php");
+    const data = await res.json();
+    console.log(data.mensaje);
+
+    cargarTabla();
+};
+</script>
 </body>
 </html>
 
