@@ -5,10 +5,10 @@ header("Access-Control-Allow-Methods: POST");
 header("Access-Control-Allow-Headers: Content-Type");
 
 // Configuración de la base de datos
-$servername = "127.0.0.1";
+$servername = "localhost";
 $username = "root";
 $password = "root";
-$database = "Laboratorio_Electronica";
+$database = "laboratorio_electronica";
 
 // Conexión
 $conn = new mysqli($servername, $username, $password, $database);

@@ -10,7 +10,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   }
 
   try {
-   const res = await fetch("http://localhost:8000/backend/login.php", {
+   const res = await fetch("../../../backend/login.php", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ usuario, password })

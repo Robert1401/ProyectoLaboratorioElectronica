@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Materias</title>
+    <link rel="stylesheet" href="Materias.css">
+</head>
+<body>
+    <a href="https://i.pinimg.com/736x/b4/a6/08/b4a608691b94a09e30b425bc8df5a25a.jpg"><img src="../assets/home.png" alt="home" id="home"></a>
+    <div id="AreaTrabajo">
+        <div id="Encabezado">
+            <img src="../assets/escudo.png" alt="Logo de Instituto Tecnológico de Saltillo">
+            <h1>Materias</h1>
+            <img src="../assets/TECNM.png" alt="Logo de Tecnológico Nacional  de México">
+        </div>
+        <hr>
+        <form id="Formulario" action="">
+            <div id="Registro">
+                <span>Nombre de la materia:</span>
+                <input type="text" placeholder=" Escribe ..." minlength="1" maxlength="50" id="nombreMateria">
+            </div>
+            <div id="Botones">
+                <button title="Escribe algo en el campo para guardar" id="Guardar" type="button">
+                    <img src="../assets/Icono-Guardar.png" class="icono"> Guardar
+                </button>
+                <button title="Selecciona primero un elemento de la tabla para modificar" id="Modificar" type="button">
+                    <img src="../assets/Icono-Modificar.png" class="icono">Modificar
+                </button>
+                <button title="Selecciona primero un elemento de la tabla para eliminar" id="Eliminar" type="button">
+                    <img src="../assets/Icono-Eliminar.png" class="icono">Eliminar
+                </button>
+            </div>
+        </form>
+        <div id="tabla">
+            <table id="tablaDinamica">
+                <thead>
+                    <tr><th>Materias</th></tr>
+                </thead>
+                <tbody>
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script src="../src/Materias-LAGP.js"></script>
+</body>
+</html>
