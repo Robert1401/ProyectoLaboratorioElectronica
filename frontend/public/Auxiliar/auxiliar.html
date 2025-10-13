@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menú Principal</title>
+  <link rel="stylesheet" href="auxiliar.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <div class="contenedor">
+    <!-- 🔹 Encabezado -->
+    <header>
+      <img src="../assets/logo1.png" alt="Logo TecNM" class="logo izquierda">
+      <h1>Menú Principal</h1>
+      <img src="../assets/escudo.png" alt="Escudo" class="logo derecha">
+    </header>
+
+    <!-- 🔹 Menú principal -->
+    <main>
+      <div class="menu">
+        <button class="boton" onclick="irA('Carreras/carreras.html')"><i class="fa-solid fa-graduation-cap"></i> Carreras</button>
+        <button class="boton" onclick="irA('Materias/agregar-materias.html')"><i class="fa-solid fa-book"></i> Materias</button>
+        <button class="boton" onclick="irA('Usuarios/usuarios.html')"><i class="fa-solid fa-users"></i> Usuarios</button>
+        <button class="boton" onclick="irA('Registro/Registro-Compras.html')"><i class="fa-solid fa-clipboard-list"></i> Registro de Compra de material</button>
+        <button class="boton" onclick="irA('Material/agregar-material.html')"><i class="fa-solid fa-boxes-stacked"></i> Material</button>
+        <button class="boton" onclick="irA('Prestamos/Prestamos.html')"><i class="fa-solid fa-handshake"></i> Préstamos</button>
+        <button class="boton" onclick="irA('Asesorias/asesorias.html')"><i class="fa-solid fa-chalkboard-user"></i> Asesorías</button>
+      </div>
+    </main>
+
+    <!-- 🔹 Iconos inferiores -->
+    <footer>
+      <button class="icono" onclick="irA('../Login/index.html')"><i class="fa-solid fa-house"></i></button>
+    </footer>
+  </div>
+
+  <script src="../src/auxiliar.js"></script>
+</body>
+</html>

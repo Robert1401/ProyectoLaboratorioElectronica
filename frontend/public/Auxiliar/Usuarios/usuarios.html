@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usuarios - Laboratorio</title>
+  <link rel="stylesheet" href="usuarios.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <!-- ENCABEZADO -->
+    <header>
+      <img src="../../assets/logo1.png" alt="TecNM" class="logo">
+      <h1>Usuarios</h1>
+      <img src="../../assets/escudo.png" alt="Escudo" class="logo">
+    </header>
+
+    <!-- BUSCADOR -->
+   <div class="buscador">
+  <div class="search-box">
+    <i class="fas fa-search"></i>
+    <input type="text" id="buscar" placeholder="Buscar ">
+  </div>
+</div>
+
+
+    <!-- FORMULARIO -->
+    <form class="formulario" id="formUsuarios">
+      <div class="columna">
+        <label>Nombre:</label>
+        <input type="text" id="nombre" required>
+
+        <label>Ap. Paterno:</label>
+        <input type="text" id="apPaterno" required>
+
+        <label>Ap. Materno:</label>
+        <input type="text" id="apMaterno" required>
+
+        <label>N. Control:</label>
+        <input type="text" id="numControl" required>
+      </div>
+
+      <div class="columna">
+        <label>Rol:</label>
+        <select id="rol" required>
+          <option value="">Seleccione</option>
+          <option value="Auxiliar">Auxiliar</option>
+          <option value="Alumno">Alumno</option>
+          <option value="Administrador">Administrador</option>
+        </select>
+
+        <label>Carrera:</label>
+        <select id="carrera" required>
+          <option value="">Seleccione</option>
+          <option value="ISC">Ingeniería en Sistemas</option>
+          <option value="II">Ingeniería Industrial</option>
+          <option value="IE">Ingeniería Electrónica</option>
+        </select>
+
+        <label>Usuario:</label>
+        <input type="text" id="usuario" required>
+
+        <label>Contraseña:</label>
+        <input type="password" id="contrasena" required>
+      </div>
+    </form>
+
+    <!-- BOTONES -->
+    <footer>
+      <button class="btn" id="guardar"><i class="fas fa-save"></i> Guardar</button>
+      <button class="btn" id="actualizar"><i class="fas fa-sync-alt"></i> Actualizar</button>
+      <button class="btn" id="eliminar"><i class="fas fa-trash"></i> Eliminar</button>
+      <button class="btn" id="ver"><i class="fas fa-users"></i> Ver todos los alumnos</button>
+
+      <div class="iconos">
+         <a href="../auxiliar.html" class="icono"><i class="fa-solid fa-arrow-left"></i></a>
+        <a href="../../Login/index.html" class="icono"><i class="fa-solid fa-house"></i></a>
+      </div>
+    </footer>
+  </div>
+
+  <script src="../../src/usuarios.js"></script>
+</body>
+</html>
