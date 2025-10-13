@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agregar Material</title>
+  <link rel="stylesheet" href="material.css">
+  <script defer src="/frontend/src/material.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Encabezado -->
+    <header>
+      <img src="/frontend/public/assets/logo1.png" alt="Logo TecNM" class="logo">
+      <h1>Agregar Material</h1>
+      <img src="/frontend/public/assets/escudo.png" alt="Logo ITT" class="logo">
+    </header>
+
+    <!-- Fila principal -->
+    <div class="fila">
+      <!-- Formulario -->
+      <div class="formulario">
+        <label for="nombre">Nombre:</label>
+        <input type="text" id="nombre" placeholder="Ingrese nombre del material">
+
+        <label for="clave">Clave:</label>
+        <input type="text" id="clave" placeholder="Ingrese clave del material">
+
+        <label for="cantidad">Cantidad:</label>
+        <input type="number" id="cantidad" placeholder="Ingrese cantidad disponible">
+      </div>
+
+      <!-- Tabla -->
+      <div class="tabla">
+        <table id="tablaMateriales">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Clave</th>
+              <th>Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Se agregarán dinámicamente las filas -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Botones -->
+    <footer>
+      <button class="btn" id="btnGuardar"><i class="fas fa-save"></i> Guardar</button>
+      <button class="btn" id="btnActualizar"><i class="fas fa-sync-alt"></i> Actualizar</button>
+      <button class="btn" id="btnEliminar"><i class="fas fa-trash-alt"></i> Eliminar</button>
+
+      <div class="iconos">
+        <a href="/frontend/public/Auxiliar/Registro/Registro-Compras.html" class="icono"><i class="fas fa-arrow-left"></i></a>
+        <a href="/frontend/public/Auxiliar/auxiliar.html" class="icono"><i class="fas fa-home"></i></a>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

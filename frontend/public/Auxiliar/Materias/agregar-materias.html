@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agregar Materias</title>
+  <link rel="stylesheet" href="materias.css">
+  <script defer src="../../src/materias.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Encabezado -->
+    <header>
+      <img src="../../assets/logo1.png" alt="Logo TecNM" class="logo">
+      <h1>Agregar Materias</h1>
+      <img src="../../assets/escudo.png" alt="Logo IT" class="logo">
+    </header>
+
+    <!-- Cuerpo principal -->
+    <main>
+      <div class="fila">
+        <!-- Formulario -->
+        <div class="formulario">
+          <label for="nombre">Nombre de la Materia:</label>
+          <input type="text" id="nombre" placeholder="Ingresa el nombre de la materia">
+
+          <label for="carrera">Carrera:</label>
+          <select id="carrera">
+            <option value="">Seleccione una carrera</option>
+          </select>
+
+          <div id="mensajes" style="margin-top: 10px; color: #7a0000; font-weight: bold;"></div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="tabla">
+          <table id="tablaMaterias">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Carrera</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Filas dinámicas -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- Botones inferiores -->
+    <footer>
+      <button class="btn" id="guardar"><i class="fa-solid fa-floppy-disk"></i>Guardar</button>
+      <button class="btn" id="actualizar"><i class="fa-solid fa-rotate"></i>Actualizar</button>
+      <button class="btn" id="eliminar"><i class="fa-solid fa-trash"></i>Eliminar</button>
+
+      <div class="iconos">
+        <a href="../auxiliar.html" class="icono"><i class="fa-solid fa-arrow-left"></i></a>
+        <a href="../../Login/index.html" class="icono"><i class="fa-solid fa-house"></i></a>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

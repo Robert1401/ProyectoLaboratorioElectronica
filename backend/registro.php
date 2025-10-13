@@ -1,56 +1,82 @@
 <?php
-header("Content-Type: application/json");
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
+header("Content-Type: application/json; charset=utf-8");
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST");
+header("Access-Control-Allow-Headers: Content-Type");
+
+// Conexión MySQL
 $servername = "127.0.0.1";
 $username = "root";
-$password = "root"; // tu contraseña
+$password = "root";
 $dbname = "Laboratorio_Electronica";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
+
 if ($conn->connect_error) {
-    echo json_encode(["success" => false, "message" => "Error de conexión a la base de datos"]);
+    echo json_encode(["success" => false, "message" => "❌ Error al conectar con la base de datos: " . $conn->connect_error]);
     exit;
 }
 
+// Obtener JSON
 $data = json_decode(file_get_contents("php://input"), true);
-$numeroControl = $data['numeroControl'];
-$nombre = $data['nombre'];
-$apellidoPaterno = $data['apellidoPaterno'];
-$apellidoMaterno = $data['apellidoMaterno'];
-$materia = $data['materia'];
-$carrera = $data['carrera'];
-$clave = $data['clave']; // usar la contraseña que el usuario puso
-$estado = true;
 
-// Verificar si el alumno ya está registrado
-$check_sql = "SELECT NumeroControl FROM Alumnos WHERE NumeroControl = ?";
-$check_stmt = $conn->prepare($check_sql);
-$check_stmt->bind_param("i", $numeroControl);
-$check_stmt->execute();
-$check_stmt->store_result();
-
-if ($check_stmt->num_rows > 0) {
-    echo json_encode(["success" => false, "message" => "⚠️ Ya existe un alumno con ese número de control."]);
-    $check_stmt->close();
-    $conn->close();
+if (!$data) {
+    echo json_encode(["success" => false, "message" => "❌ No se recibieron datos."]);
     exit;
 }
-$check_stmt->close();
 
-// Insertar nuevo alumno
-$sql = "INSERT INTO Alumnos 
-(NumeroControl, Materias_ClaveMateria, Carreras_ClaveCarrera, Nombre, ApellidoPaterno, ApellidoMaterno, Estado, Clave)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("isssssis", $numeroControl, $materia, $carrera, $nombre, $apellidoPaterno, $apellidoMaterno, $estado, $clave);
-
-if ($stmt->execute()) {
-    echo json_encode(["success" => true, "message" => "✅ Registro exitoso. ¡Bienvenido!"]);
-} else {
-    echo json_encode(["success" => false, "message" => "⚠️ Error al registrar. Verifica los datos."]);
+// Validar campos
+$required = ["nombre","apellidoPaterno","apellidoMaterno","carrera","usuario","clave"];
+foreach($required as $field){
+    if(empty($data[$field])){
+        echo json_encode(["success"=>false,"message"=>"❌ El campo '$field' es obligatorio."]);
+        exit;
+    }
 }
 
-$stmt->close();
+// Sanitizar
+$nombre = $conn->real_escape_string($data["nombre"]);
+$apellidoPaterno = $conn->real_escape_string($data["apellidoPaterno"]);
+$apellidoMaterno = $conn->real_escape_string($data["apellidoMaterno"]);
+$carrera = intval($data["carrera"]);
+$usuario = $conn->real_escape_string($data["usuario"]);
+$clave = password_hash($data["clave"], PASSWORD_BCRYPT);
+
+// Verificar usuario
+$stmtCheck = $conn->prepare("SELECT usuario FROM Usuarios WHERE usuario=?");
+$stmtCheck->bind_param("s", $usuario);
+$stmtCheck->execute();
+$resCheck = $stmtCheck->get_result();
+if($resCheck->num_rows > 0){
+    echo json_encode(["success"=>false,"message"=>"❌ El usuario '$usuario' ya existe."]);
+    exit;
+}
+$stmtCheck->close();
+
+// Insertar alumno
+$stmtAlumno = $conn->prepare("INSERT INTO Alumnos (id_Estado, id_Carrera, nombre, apellidoPaterno, apellidoMaterno) VALUES (1, ?, ?, ?, ?)");
+$stmtAlumno->bind_param("isss", $carrera, $nombre, $apellidoPaterno, $apellidoMaterno);
+
+if($stmtAlumno->execute()){
+    $numeroControl = $conn->insert_id;
+
+    $stmtUsuario = $conn->prepare("INSERT INTO Usuarios (usuario, numeroControl, clave) VALUES (?, ?, ?)");
+    $stmtUsuario->bind_param("sis", $usuario, $numeroControl, $clave);
+
+    if($stmtUsuario->execute()){
+        echo json_encode(["success"=>true,"message"=>"✅ Registro exitoso."]);
+    } else {
+        echo json_encode(["success"=>false,"message"=>"❌ Error al crear usuario: ".$stmtUsuario->error]);
+    }
+    $stmtUsuario->close();
+} else {
+    echo json_encode(["success"=>false,"message"=>"❌ Error al registrar alumno: ".$stmtAlumno->error]);
+}
+
+$stmtAlumno->close();
 $conn->close();
 ?>
