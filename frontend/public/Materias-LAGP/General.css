@@ -1,0 +1,119 @@
+*{
+    box-sizing: border-box;
+}
+body{
+    background-color: rgb(182, 44, 44);
+}
+#home{
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 2.5%;
+}
+#AreaTrabajo{
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    padding: 3rem;
+    border-radius: 2rem;
+    box-shadow: 0 0 30px 15px rgb(255, 0, 0);
+}
+#Encabezado{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+#Encabezado img{
+    height: 5rem;
+}
+hr{
+    border:none;
+    border: 2px solid #d92525;
+    width: 95%;
+}
+#Formulario{
+    display: flex;
+    flex-direction: column;
+}
+#Registro{
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 1rem; /*Espacio entre elementos*/
+    padding: 1rem;
+}
+input{
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    border: 2px solid #ccc;
+    border-radius: 1rem;
+    padding-left: 1rem;
+}
+input:focus {
+    outline: none;
+    border-color: red;
+}
+#Botones{
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    padding: 1rem;
+    gap: 1rem;
+}
+button{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.2rem;
+    height: 2rem;
+    width: 6rem;
+    border: none;
+    border-radius: 1rem;
+    color: white;
+    background: linear-gradient(to right, #e90808, #df3838);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+button:hover{
+    background: rgb(152, 152, 152);
+    color: black;
+}
+.icono{
+    height: 55%;
+}
+#tabla{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 0 5px 0.5px rgb(226, 223, 223);
+    border-radius: 2rem;
+}
+table{
+    width: 95%;
+    margin: 1rem;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+th{
+    background-color: rgb(207, 45, 45);
+    color: white;
+    border-radius: 1rem;
+}
+th, tbody, td{
+    padding: 0.5rem;     /* Espacio dentro de cada celda */
+    text-align: center;
+}
+td:hover{
+    background-color: #ccc;
+    cursor: pointer;
+}
+td:active{
+    background-color: rgb(255, 93, 93);
+    cursor: cell;
+}
+/*Textos*/ 
+h1{
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    color: #d92525;
+}
+span{
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    color: #d92525;
+}
