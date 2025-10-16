@@ -39,9 +39,10 @@ header h1 {
     flex-wrap: wrap;
 }
 
+
 .form-container {
     flex: 1;
-    min-width: 280px;
+    min-width: 100px;
     background: #fafafa;
     padding: 20px;
     border-radius: 15px;
@@ -64,32 +65,41 @@ header h1 {
     outline: none;
 }
 
-.table-container {
-    flex: 1;
-    min-width: 300px;
-    margin-left: 20px;
-    background: #fafafa;
-    border-radius: 15px;
-    padding: 15px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+/* === TABLA === */
+.tabla {
+  flex: 1;
+  background: #fffdfd;
+  padding: 25px;
+  border-radius: 18px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.table-container table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: center;
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fffafc;
+  box-shadow: 0 3px 10px rgba(120, 0, 0, 0.1);
 }
 
-.table-container th {
-    background: #7a0b0b;
-    color: white;
-    padding: 10px;
-    border-radius: 10px 10px 0 0;
+th {
+  background: linear-gradient(to right, #b30000, #7a0000);
+  color: #fff;
+  font-weight: bold;
+  padding: 14px;
+  font-size: 1.05em;
 }
 
-.table-container td {
-    padding: 10px;
-    border-top: 1px solid #ddd;
+td {
+  border-bottom: 1px solid #d6bcbc;
+  padding: 12px;
+  text-align: center;
+  color: #5a0000;
+}
+
+tr:hover td {
+  background: #ffe8e8;
 }
 
 .buttons {

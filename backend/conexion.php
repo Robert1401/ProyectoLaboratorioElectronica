@@ -1,7 +1,7 @@
 <?php
 $servername = "localhost";
 $username = "root";
-$password = "roblox12";
+$password = "root";
 $dbname = "inventario";
 
 $conn = new mysqli($servername, $username, $password, $dbname);

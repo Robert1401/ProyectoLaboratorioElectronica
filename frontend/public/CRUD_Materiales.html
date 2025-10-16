@@ -9,9 +9,9 @@
 <body>
     <div class="container">
         <header>
-            <img src="logo_tec.png" alt="Logo TecNM" class="logo">
+            <img src="../../assets/logo1.png" alt="Logo TecNM" class="logo">
             <h1>Materiales</h1>
-            <img src="logo_escudo.png" alt="Escudo" class="logo">
+            <img src="../../assets/escudo.png" alt="Escudo" class="logo">
         </header>
 
         <div class="content">
@@ -23,22 +23,22 @@
                 <input type="text" id="clave" placeholder="Ingrese la clave del material">
             </div>
 
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Nombre</th>
-                            <th>Clave</th>
-                            <th>Cantidad</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr></tr>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+            <!-- Tabla -->
+      <div class="tabla">
+        <table id="tablaMateriales">
+          <thead>
+            <tr>
+              <th>Clave</th>
+              <th>Nombre</th>
+              <th>Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Se agregarán dinámicamente las filas -->
+          </tbody>
+        </table>
+      </div>
+    </div>
 
         <div class="buttons">
             <button class="guardar">Guardar</button>

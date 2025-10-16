@@ -4,9 +4,9 @@ let carreras = [];
 let idSeleccionado = null;
 
 // 🔹 Cargar carreras al inicio
-document.addEventListener("DOMContentLoaded", cargarCarreras);
+document.addEventListener("DOMContentLoaded", cargarMateriales);
 
-async function cargarCarreras() {
+async function cargarMateriales() {
   const res = await fetch("/backend/carreras.php");
   const data = await res.json();
   carreras = data;
@@ -44,7 +44,7 @@ document.querySelector(".guardar").addEventListener("click", async () => {
   const data = await res.json();
   alert(data.mensaje || data.error);
   inputNombre.value = "";
-  cargarCarreras();
+  cargarMateriales();
 });
 
 // 🔹 Eliminar carrera
@@ -62,7 +62,7 @@ document.querySelector(".eliminar").addEventListener("click", async () => {
   alert(data.mensaje || data.error);
   inputNombre.value = "";
   idSeleccionado = null;
-  cargarCarreras();
+  cargarMateriales();
 });
 
 // 🔹 Actualizar (por simplicidad, elimina + agrega)
@@ -81,5 +81,5 @@ document.querySelector(".actualizar").addEventListener("click", async () => {
 
   inputNombre.value = "";
   idSeleccionado = null;
-  cargarCarreras();
+  cargarMateriales();
 });
