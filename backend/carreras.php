@@ -4,7 +4,7 @@ header("Content-Type: application/json; charset=utf-8");
 // 🔹 Conexión
 $servername = "127.0.0.1";
 $username = "root";
-$password = "roblox12";
+$password = "root";
 $dbname = "Laboratorio_Electronica";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
