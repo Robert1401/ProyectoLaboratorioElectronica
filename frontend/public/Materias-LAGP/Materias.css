@@ -3,6 +3,9 @@
     margin-right: 20vh;
     margin-top: 10vh;
 }
+#Registro{
+    justify-content: center;
+}
 input{
     width: 25%;
     font-size: 1rem;
@@ -23,8 +26,11 @@ span{
     #Encabezado img {
         height: 3.5rem;
     }
+    #Botones{
+        gap: 0.3rem;
+    }
     input, button {
-        width: 95%;
+        width: 90%;
     }
     h1 {
         font-size: 1.8rem;
