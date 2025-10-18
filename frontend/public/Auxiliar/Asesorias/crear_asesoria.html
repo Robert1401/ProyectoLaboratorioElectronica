@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asesoría</title>
+  <link rel="stylesheet" href="crear_asesoria.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Flatpickr CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <img src="../../assets/logo1.png" alt="Logo TecNM" class="logo izquierda">
+      <h1>Asesorias</h1>
+      <img src="../../assets/escudo.png" alt="Escudo" class="logo derecha">
+    </header>
+
+    <div class="formulario">
+      <form id="formAsesoria">
+        <input type="hidden" id="id" name="id"> <!-- Campo oculto para modificar -->
+        <div class="fila">
+          <div class="campo">
+            <label for="titulo">Título:</label>
+            <input type="text" id="titulo" name="titulo" required>
+          </div>
+          <div class="campo">
+            <label for="fecha">Fecha:</label>
+            <input type="text" id="fecha" name="fecha" required>
+          </div>
+        </div>
+
+        <div class="fila">
+          <div class="campo">
+            <label for="tema">Tema o descripción:</label>
+            <textarea id="tema" name="tema" rows="2" required></textarea>
+          </div>
+          <div class="campo">
+            <label for="hora">Hora:</label>
+            <input type="time" id="hora" name="hora" required>
+          </div>
+        </div>
+
+        <div class="fila">
+          <div class="campo">
+            <label for="asistentes">Participantes:</label>
+            <input type="number" id="asistentes" name="asistentes" min="1" required>
+          </div>
+        </div>
+
+        <div class="boton">
+          <button type="button" class="btn-agregar" id="btnAgregar">Agregar</button>
+          <button type="button" class="btn-agregar" id="btnModificar">Modificar</button>
+        </div>
+      </form>
+    </div>
+
+    <footer>
+      <a href="../asesorias/asesorias.html" class="icono"><i class="fa-solid fa-arrow-left"></i></a>
+      <a href="../../Login/index.html" class="icono"><i class="fa-solid fa-house"></i></a>
+    </footer>
+  </div>
+
+  <!-- Flatpickr JS -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <!-- Script principal -->
+  <script src="asesoria.js"></script>
+  <script>
+  // Rellenar formulario desde los parámetros de la URL
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.has("id")) {
+    document.getElementById("id").value = params.get("id");
+    document.getElementById("titulo").value = params.get("titulo");
+    document.getElementById("tema").value = params.get("motivo");
+    document.getElementById("fecha").value = params.get("fecha");
+    document.getElementById("hora").value = params.get("hora");
+    document.getElementById("asistentes").value = params.get("participantes");
+  }
+</script>
+</body>
+</html>
+
