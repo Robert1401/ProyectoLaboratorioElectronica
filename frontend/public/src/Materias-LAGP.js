@@ -17,7 +17,7 @@ function cargarMaterias() {
                         nombreOriginal = materia.nombre; // Guardamos el nombre actual
                         document.getElementById("nombreMateria").value = materia.nombre; // cargamos input
                     });
-
+                    
                     tbody.appendChild(fila);
                 });
             } else {
