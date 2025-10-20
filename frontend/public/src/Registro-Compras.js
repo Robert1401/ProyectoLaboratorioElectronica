@@ -1,21 +1,20 @@
 /* =======================
    CONFIG
    ======================= */
-// Si backend y frontend están en el mismo host/servidor PHP:
+// Usa tu ruta real:
 const API = "/backend/Registro-Compras.php";
-// Si usas otro puerto distinto, pon la URL absoluta:
-// const API = "http://127.0.0.1:8001/backend/Registro-Compras.php";
 
 /* Auxiliar resuelto automáticamente desde el backend */
 let AUX_NUMERO_CONTROL = null;
 
 /* =======================
-   ESTADO (lista en memoria)
+   ESTADO
    ======================= */
 const state = {
-  materiales: [],   // [{id_Material, nombre, cantidad (stock)}]
-  items: [],        // [{id_Material, nombre, cantidad}]
-  selIds: new Set() // ids seleccionados visualmente
+  materiales: [],      // catálogo [{id_Material, nombre, cantidad}]
+  carrito: [],         // items por guardar [{id_Material, nombre, cantidad}]
+  history: [],         // historial traído de BD
+  historySelected: null // { id_compra, id_Material }
 };
 
 /* =======================
@@ -23,23 +22,15 @@ const state = {
    ======================= */
 async function fetchJson(url, options = {}) {
   const res  = await fetch(url, options);
-  const text = await res.text();
-  const ct   = res.headers.get("content-type") || "";
-  console.log("FETCH", options.method || "GET", url, "->", res.status, ct, text);
-
-  if (!ct.includes("application/json")) {
-    throw new Error(`Respuesta no JSON (status ${res.status}). Cuerpo: ${text.slice(0, 300)}`);
-  }
+  const txt  = await res.text();
   let data;
-  try { data = JSON.parse(text); }
-  catch { throw new Error(`JSON inválido. Cuerpo: ${text.slice(0, 300)}`); }
-
+  try { data = JSON.parse(txt); }
+  catch { throw new Error(`Respuesta no JSON (${res.status}). ${txt.slice(0,200)}`); }
   if (!res.ok) throw new Error(data.error || "Error de red");
   return data;
 }
-
-const $    = (sel) => document.querySelector(sel);
-const $val = (sel) => ($(sel)?.value || "").trim();
+const $    = (s) => document.querySelector(s);
+const $val = (s) => ($(s)?.value || "").trim();
 
 function todayISO() {
   const d = new Date();
@@ -48,7 +39,7 @@ function todayISO() {
   return `${d.getFullYear()}-${m}-${day}`;
 }
 
-function toast(msg, ms = 2200) {
+function toast(msg, ms=1800) {
   const t = $("#toast");
   if (!t) return alert(msg);
   t.textContent = msg;
@@ -56,106 +47,88 @@ function toast(msg, ms = 2200) {
   setTimeout(() => t.classList.remove("show"), ms);
 }
 
+function pulse(el, cls="pulse", ms=400) {
+  if (!el) return;
+  el.classList.add(cls);
+  setTimeout(()=>el.classList.remove(cls), ms);
+}
+
 /* =======================
    AUXILIAR AUTO
    ======================= */
 async function cargarAuxiliar() {
   try {
-    const ncLocal = localStorage.getItem("numeroControl");
-    const url = ncLocal
-      ? `${API}?auxiliar=1&numeroControl=${encodeURIComponent(ncLocal)}`
-      : `${API}?auxiliar=1`;
-
-    const info = await fetchJson(url);
+    const nc = localStorage.getItem("numeroControl");
+    const info = await fetchJson(nc ? `${API}?auxiliar=1&numeroControl=${encodeURIComponent(nc)}` : `${API}?auxiliar=1`);
     AUX_NUMERO_CONTROL = info.numeroControl;
-
-    const auxInput = $("#auxiliar");
-    if (auxInput) {
-      auxInput.value = info.nombre || "";
-      auxInput.readOnly = true;
-    }
-  } catch (e) {
-    console.error(e);
-    const auxInput = $("#auxiliar");
-    if (auxInput) {
-      auxInput.value = "Auxiliar no disponible";
-      auxInput.readOnly = true;
-    }
+    $("#auxiliar").value = info.nombre || "";
+  } catch {
+    $("#auxiliar").value = "Auxiliar no disponible";
   }
+  $("#auxiliar").readOnly = true;
 }
 
 /* =======================
-   TABLA (lista en memoria)
-   ======================= */
-function renderTablaLocal() {
-  const tbody = $("#tablaMateriales tbody");
-  tbody.innerHTML = "";
-
-  if (state.items.length === 0) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="3" style="text-align:center; opacity:.7;">Sin artículos</td>`;
-    tbody.appendChild(tr);
-    return;
-  }
-
-  const fecha = $val("#fecha") || todayISO();
-
-  state.items.forEach((it, idx) => {
-    const tr = document.createElement("tr");
-    tr.dataset.id = String(it.id_Material);
-    if (state.selIds.has(it.id_Material)) tr.classList.add("selected");
-
-    tr.innerHTML = `
-      <td>${it.nombre}</td>
-      <td>
-        <input type="number" class="row-qty" min="1" value="${it.cantidad}" data-idx="${idx}" style="width:90px;">
-      </td>
-      <td>${fecha}</td>
-    `;
-
-    // Evita que el click dentro del input cambie selección
-    tr.addEventListener("click", (ev) => {
-      if ((ev.target instanceof HTMLElement) && ev.target.classList.contains("row-qty")) return;
-      const id = it.id_Material;
-      if (state.selIds.has(id)) state.selIds.delete(id);
-      else state.selIds.add(id);
-      renderTablaLocal();
-    });
-
-    tbody.appendChild(tr);
-  });
-}
-
-function syncFromTableToState() {
-  document.querySelectorAll("#tablaMateriales tbody .row-qty").forEach(inp => {
-    const idx = Number(inp.getAttribute("data-idx"));
-    const val = Math.max(1, parseInt(inp.value, 10) || 1);
-    inp.value = String(val);
-    if (state.items[idx]) state.items[idx].cantidad = val;
-  });
-}
-
-function onFechaChange() { renderTablaLocal(); }
-
-/* =======================
-   CARGA DE MATERIALES
+   CATALOGO
    ======================= */
 async function cargarMateriales() {
   try {
     const mats = await fetchJson(`${API}?materiales=1`);
     state.materiales = mats;
     const sel = $("#material");
-    if (sel) {
-      sel.innerHTML = `<option value="">Seleccione un material</option>` +
-        mats.map(m => `<option value="${m.id_Material}">${m.nombre} (stock: ${m.cantidad})</option>`).join("");
-    }
+    sel.innerHTML = `<option value="">Seleccione un material</option>` +
+      mats.map(m => `<option value="${m.id_Material}">${m.nombre} (stock: ${m.cantidad})</option>`).join("");
   } catch (e) {
     alert("No se pudieron cargar los materiales: " + e.message);
   }
 }
 
 /* =======================
-   AGREGAR ITEM
+   HISTORIAL (BD SIEMPRE EN TABLA)
+   ======================= */
+async function cargarHistorial() {
+  const tbody = $("#tablaMateriales tbody");
+  tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;opacity:.7;">Cargando...</td></tr>`;
+  try {
+    const rows = await fetchJson(`${API}?compras=1&limit=50`);
+    state.history = rows || [];
+    renderHistorial();
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;opacity:.7;">Error: ${e.message}</td></tr>`;
+  }
+}
+
+function renderHistorial() {
+  const tbody = $("#tablaMateriales tbody");
+  tbody.innerHTML = "";
+  if (!state.history.length) {
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;opacity:.7;">Sin registros</td></tr>`;
+    state.historySelected = null;
+    return;
+  }
+
+  state.history.forEach(r => {
+    const f = (r.fechaIngreso || "").toString().split(" ")[0] || r.fechaIngreso || "-";
+    const tr = document.createElement("tr");
+    tr.dataset.idCompra = r.id_compra;
+    tr.dataset.idMaterial = r.id_Material;
+    tr.innerHTML = `
+      <td>${r.nombreMaterial}</td>
+      <td>${r.cantidadComprada} ${Number.isFinite(+r.stockActual) ? `(stock: ${r.stockActual})` : ""}</td>
+      <td>${f}</td>
+    `;
+    tr.addEventListener("click", () => {
+      // marcar selección
+      tbody.querySelectorAll("tr").forEach(x=>x.classList.remove("selected"));
+      tr.classList.add("selected");
+      state.historySelected = { id_compra: Number(r.id_compra), id_Material: Number(r.id_Material) };
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+/* =======================
+   CARRITO (local)
    ======================= */
 function onPlusQty(e) {
   e.preventDefault();
@@ -168,70 +141,45 @@ function onPlusQty(e) {
 function agregarItem() {
   const idMat = parseInt($val("#material"), 10);
   const fecha = $val("#fecha");
-
-  if (!idMat) {
-    alert("Selecciona un material.");
-    $("#material")?.focus();
-    return;
-  }
-  if (!fecha) {
-    alert("Selecciona la fecha.");
-    $("#fecha")?.focus();
-    return;
-  }
-
   let cantidad = parseInt($val("#cantidad"), 10);
+
+  if (!idMat) { alert("Selecciona un material."); $("#material")?.focus(); return; }
+  if (!fecha)  { alert("Selecciona la fecha."); $("#fecha")?.focus();    return; }
   if (!Number.isFinite(cantidad) || cantidad <= 0) {
-    alert("La cantidad debe ser un número mayor a 0.");
-    $("#cantidad").value = "1";
-    $("#cantidad").focus();
-    return;
+    alert("La cantidad debe ser mayor a 0."); $("#cantidad").value="1"; $("#cantidad").focus(); return;
   }
 
   const mat = state.materiales.find(m => Number(m.id_Material) === idMat);
-  if (!mat) return alert("Material no encontrado en el catálogo.");
+  if (!mat) return alert("Material no encontrado.");
 
-  // Si ya existe en la lista local, SOLO incrementa cantidad
-  const ya = state.items.find(it => it.id_Material === idMat);
+  const ya = state.carrito.find(it => it.id_Material === idMat);
   if (ya) ya.cantidad += cantidad;
-  else state.items.push({ id_Material: idMat, nombre: mat.nombre, cantidad });
+  else state.carrito.push({ id_Material: idMat, nombre: mat.nombre, cantidad });
 
-  state.selIds.clear();
-  state.selIds.add(idMat);
-  renderTablaLocal();
+  // feedback visual en el botón Guardar
+  toast("✅ Material agregado al carrito. Presiona GUARDAR para subir a la BD.");
+  pulse($("#guardar"), "pulse-strong", 600);
 
-  // Limpia inputs y deja listo
+  // reset inputs
   $("#material").value = "";
   $("#cantidad").value = "1";
   $("#material").focus();
-
-  // Mensaje que pediste
-  toast("✅ Material agregado. Presiona GUARDAR para subirlo a la BD.");
 }
 
-function onAgregar(e) {
-  e.preventDefault();
-  agregarItem();
-}
+function onAgregar(e){ e.preventDefault(); agregarItem(); }
 
 /* =======================
-   GUARDAR COMPRA
+   GUARDAR -> BD (+ autorefresco + ticket)
    ======================= */
 async function onGuardar() {
   const fecha = $val("#fecha");
   if (!fecha) return alert("Selecciona la fecha.");
-
-  syncFromTableToState();
-  if (state.items.length === 0) return alert("Agrega al menos un material.");
+  if (!state.carrito.length) return alert("Agrega al menos un material.");
 
   const payload = {
     fecha,
-    numeroControl: AUX_NUMERO_CONTROL, // auxiliar auto
-    items: state.items.map(it => ({
-      id_Material: it.id_Material,
-      cantidad: it.cantidad,
-      gastoTotal: 0
-    }))
+    numeroControl: AUX_NUMERO_CONTROL,
+    items: state.carrito.map(it => ({ id_Material: it.id_Material, cantidad: it.cantidad, gastoTotal: 0 }))
   };
 
   try {
@@ -241,16 +189,21 @@ async function onGuardar() {
       body: JSON.stringify(payload)
     });
 
-    // Guardar ticket para la página de comprobante
+    // ticket
     const ticket = {
       id_compra: resp.id_compra,
       fecha,
       auxiliar: resp.auxiliar || null,
-      items: state.items.slice()
+      items: state.carrito.slice()
     };
     sessionStorage.setItem("ticket_compra", JSON.stringify(ticket));
 
-    // Redirigir al ticket (ajusta ruta si tu árbol es distinto)
+    // vaciar carrito y REFRESCAR TABLA BD (sin tocar Actualizar)
+    state.carrito = [];
+    await cargarHistorial();
+    toast("✅ Compra guardada. Tabla actualizada.");
+
+    // ir al ticket (si no quieres salir de la vista, comenta la siguiente línea)
     window.location.href = "../../Tickets/ticket.html";
   } catch (e) {
     alert("❌ No se pudo guardar: " + e.message);
@@ -258,108 +211,144 @@ async function onGuardar() {
 }
 
 /* =======================
-   ELIMINAR (desde BD o local)
+   ELIMINAR (modal con parcial / total)
    ======================= */
-let editTarget = null; // { id_compra, id_Material }
+function openEliminarModal(prefSel=null) {
+  // construir modal si no existe
+  let dlg = document.getElementById("dlgEliminar");
+  if (!dlg) {
+    dlg = document.createElement("div");
+    dlg.id = "dlgEliminar";
+    dlg.innerHTML = `
+      <div class="dlg-mask" style="position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:1000;">
+        <div class="dlg-card" style="background:#fff;min-width:360px;max-width:520px;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.25);padding:16px;">
+          <h3 style="margin:0 0 8px;">Eliminar del historial</h3>
+          <p style="margin:0 0 10px;opacity:.8;">Selecciona la línea y la cantidad a eliminar.</p>
+          <div style="display:grid;gap:8px;">
+            <label>Producto / Compra:
+              <select id="dl_line" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;"></select>
+            </label>
+            <label>Cantidad a eliminar:
+              <input id="dl_qty" type="number" min="1" value="1" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;">
+            </label>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
+            <button id="dl_cancel" class="btn">Cancelar</button>
+            <button id="dl_partial" class="btn btn-secondary">Eliminar cantidad</button>
+            <button id="dl_total" class="btn btn-danger">Eliminar todo</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(dlg);
+  }
 
-async function onEliminar() {
-  if (editTarget && editTarget.id_compra && editTarget.id_Material) {
-    if (!confirm("¿Eliminar esta línea de compra? Se ajustará el stock.")) return;
+  // llenar opciones
+  const sel = dlg.querySelector("#dl_line");
+  sel.innerHTML = "";
+  state.history.forEach(r => {
+    const txt = `${r.nombreMaterial} — cant: ${r.cantidadComprada} — compra #${r.id_compra}`;
+    const opt = document.createElement("option");
+    opt.value = JSON.stringify({ id_compra: r.id_compra, id_Material: r.id_Material, max: r.cantidadComprada });
+    opt.textContent = txt;
+    sel.appendChild(opt);
+  });
+
+  // preselección si venimos de un click en la tabla
+  if (prefSel) {
+    const val = JSON.stringify(prefSel);
+    const opt = [...sel.options].find(o => {
+      const v = JSON.parse(o.value);
+      return v.id_compra == prefSel.id_compra && v.id_Material == prefSel.id_Material;
+    });
+    if (opt) sel.value = opt.value;
+  }
+
+  // listeners
+  const cancel = dlg.querySelector("#dl_cancel");
+  const partial = dlg.querySelector("#dl_partial");
+  const total = dlg.querySelector("#dl_total");
+  const qtyInp = dlg.querySelector("#dl_qty");
+
+  function close() { dlg.remove(); }
+  cancel.onclick = close;
+
+  partial.onclick = async () => {
+    const chosen = JSON.parse(sel.value);
+    let q = parseInt(qtyInp.value, 10);
+    if (!Number.isFinite(q) || q <= 0) return alert("Cantidad inválida.");
+    if (q > Number(chosen.max)) return alert("No puedes eliminar más que la cantidad comprada.");
     try {
-      const resp = await fetchJson(API, {
+      await fetchJson(API, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {"Content-Type":"application/json"},
         body: JSON.stringify({
-          action: "delete_item",
-          id_compra: editTarget.id_compra,
-          id_Material: editTarget.id_Material
+          action: "decrement_item",
+          id_compra: Number(chosen.id_compra),
+          id_Material: Number(chosen.id_Material),
+          cantidad: q
         })
       });
-      alert(`🗑️ ${resp.mensaje}`);
-      editTarget = null;
-      await onActualizar();
+      close();
+      await cargarHistorial();
       await cargarMateriales();
-    } catch (e) {
-      alert("❌ No se pudo eliminar: " + e.message);
+      toast("✅ Cantidad eliminada. Tabla actualizada.");
+    } catch(e) {
+      alert("❌ No se pudo eliminar parcialmente: "+e.message);
     }
-    return;
-  }
+  };
 
-  // Lista local (quita el último)
-  if (state.items.length === 0) return;
-  state.items.pop();
-  renderTablaLocal();
+  total.onclick = async () => {
+    const chosen = JSON.parse(sel.value);
+    if (!confirm("¿Eliminar TODA la línea seleccionada?")) return;
+    try {
+      await fetchJson(API, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+          action: "delete_item",
+          id_compra: Number(chosen.id_compra),
+          id_Material: Number(chosen.id_Material)
+        })
+      });
+      close();
+      await cargarHistorial();
+      await cargarMateriales();
+      toast("🗑️ Línea eliminada. Tabla actualizada.");
+    } catch(e) {
+      alert("❌ No se pudo eliminar la línea: "+e.message);
+    }
+  };
 }
 
-/* =======================
-   HISTORIAL (desde BD)
-   ======================= */
-async function onActualizar() {
-  try {
-    const rows = await fetchJson(`${API}?compras=1&limit=50`);
-    const tbody = $("#tablaMateriales tbody");
-    tbody.innerHTML = "";
-
-    if (!rows || rows.length === 0) {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td colspan="3" style="text-align:center; opacity:.7;">Sin registros</td>`;
-      tbody.appendChild(tr);
-      state.items = [];
-      return;
-    }
-
-    rows.forEach(r => {
-      const f = (r.fechaIngreso || "").split(" ")[0] || r.fechaIngreso || "-";
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${r.nombreMaterial}</td>
-        <td>${r.cantidadComprada} ${Number.isFinite(+r.stockActual) ? `(stock: ${r.stockActual})` : ""}</td>
-        <td>${f}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    // lo visible ahora es BD, no la lista local
-    state.items = [];
-  } catch (e) {
-    alert("No se pudo cargar el historial: " + e.message);
-  }
-}
-
-/* =======================
-   Delegación de eventos para inputs de tabla
-   ======================= */
-function attachTableDelegates() {
-  const tbody = $("#tablaMateriales tbody");
-  tbody.addEventListener("input", (ev) => {
-    const t = ev.target;
-    if (!(t instanceof HTMLInputElement)) return;
-    if (!t.classList.contains("row-qty")) return;
-    const idx = Number(t.getAttribute("data-idx"));
-    const val = Math.max(1, parseInt(t.value, 10) || 1);
-    t.value = String(val);
-    if (state.items[idx]) state.items[idx].cantidad = val;
-  });
+function onEliminar() {
+  // si el usuario ya seleccionó una fila, se preselecciona en el modal
+  const pref = state.historySelected ? { ...state.historySelected } : null;
+  openEliminarModal(pref);
 }
 
 /* =======================
    INIT
    ======================= */
 async function init() {
+  $("#fecha").value = todayISO();
   await cargarAuxiliar();
   await cargarMateriales();
-  await onActualizar();
+  await cargarHistorial();
 
-  $("#plusQty")?.addEventListener("click", onPlusQty);
-  $("#agregar")?.addEventListener("click", onAgregar);
-  $("#guardar")?.addEventListener("click", onGuardar);
-  $("#eliminar")?.addEventListener("click", onEliminar);
-  $("#actualizar")?.addEventListener("click", onActualizar);
-  $("#fecha")?.addEventListener("change", onFechaChange);
-
-  attachTableDelegates();
-
-  if (!$val("#fecha")) $("#fecha").value = todayISO();
-  renderTablaLocal();
+  $("#plusQty").addEventListener("click", onPlusQty);
+  $("#agregar").addEventListener("click", onAgregar);
+  $("#guardar").addEventListener("click", onGuardar);
+  $("#eliminar").addEventListener("click", onEliminar);
+  $("#actualizar").addEventListener("click", cargarHistorial);
+  $("#fecha").addEventListener("change", ()=>{/*la fecha solo aplica al guardar*/});
 }
 document.addEventListener("DOMContentLoaded", init);
+
+/* ====== estilos rápidos para feedback ====== */
+const style = document.createElement("style");
+style.textContent = `
+  .selected { background: rgba(127,0,0,.08); }
+  .pulse-strong { transform: scale(1.05); transition: transform .2s; }
+  .pulse-strong:where(:not(:active)) { transform: none; transition: transform .2s; }
+`;
+document.head.appendChild(style);
