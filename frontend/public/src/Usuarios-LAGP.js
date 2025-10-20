@@ -10,6 +10,8 @@ const paterno = document.getElementById('paterno');
 const materno = document.getElementById('materno');
 //Botón de contraeña
 const CambiarClave = document.getElementById('CambiarClave');
+//Selección de fila
+let fila = null;
 
 function alSeleccionar() {
   //Cuando es Auxiliar
@@ -81,6 +83,19 @@ function desplegarTabla(){
                         <td>${persona.apellidoPaterno}</td>
                         <td>${persona.apellidoMaterno}</td>
                     `;
+                    
+                    // Para modificar el elemento
+                    tr.addEventListener("click", () => {
+                        //Guardamos en una varibale el numero de control
+                        fila = persona.id;
+                        //Llenar los campos con la fila seleccionada, el event listener recuerda las variables cuando se guardaba
+                        numeroControl.value = persona.id;
+                        nombre.value = persona.nombre;
+                        paterno.value = persona.apellidoPaterno;
+                        materno.value = persona.apellidoMaterno;
+                        buscarCarrera(persona.id);
+                    });
+
                     tbody.appendChild(tr);
                 });
             } else {
@@ -128,6 +143,26 @@ function validar(){
       alert("❌ Valor inválido: " + nombre.title);
       return false;
     }
+}
+
+function buscarCarrera(numeroControl) {
+  // Llama al backend para obtener la carrera del alumno
+  fetch("../../../backend/Usuarios-LAGP/BuscarCarrera.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: "numeroControl=" + encodeURIComponent(numeroControl)
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data && data.id_Carrera) {
+      comboCarreras.value = data.id_Carrera; // Selecciona la carrera en el combo
+    } else {
+      comboCarreras.value = '';
+    }
+  })
+  .catch(error => {
+    console.error("Error al buscar carrera:", error);
+  });
 }
 
 function guardar(){
