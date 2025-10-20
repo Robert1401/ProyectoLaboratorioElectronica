@@ -30,14 +30,14 @@ function alSeleccionar() {
     numeroControl.value = '';
     numeroControl.setAttribute('maxlength', 8);
 
-    // Llama al PHP para obtener las ciudades
+    // Llama al PHP para obtener las carreras
       fetch("../../../backend/Usuarios-LAGP/LlenarComboCarreras.php")
         .then(res => res.json())
         .then(datos => {
           comboCarreras.innerHTML = '<option value="">Seleccione una carrera</option>';
           datos.forEach(c => {
             const option = document.createElement("option");
-            option.value = c.nombre;      // Es con lo que se identifica la opción
+            option.value = c.id_Carrera;      // Es con lo que se identifica la opción
             option.textContent = c.nombre; // Texto visible
             comboCarreras.appendChild(option);
         });
@@ -145,7 +145,8 @@ function guardar(){
   fetch("../../../backend/Usuarios-LAGP/Guardar.php", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: "numeroControl=" + encodeURIComponent(ncontrol) + 
+      body: "id=" + encodeURIComponent(ComboTipoRegistro.value) +
+            "&numeroControl=" + encodeURIComponent(ncontrol) + 
             "&nombre=" + encodeURIComponent(name) + 
             "&apellidoPaterno=" + encodeURIComponent(lastname) + 
             "&apellidoMaterno=" + encodeURIComponent(lastname2) + 
