@@ -1,6 +1,15 @@
 <?php
 include("../Conexion-LAGP.php"); // Conexión a la BD
 
+    /*_POST['nombre'] → obtiene el valor enviado desde un formulario con method="POST".
+    Ejemplo: <input name="nombre" ...>
+
+    isset() → verifica que la variable exista y no sea null.
+
+    trim() → quita los espacios en blanco al inicio y final.
+
+    !empty() → comprueba que la cadena no esté vacía ("" o " "). */
+
 if (isset($_POST['nombre']) && !empty(trim($_POST['nombre']))) {
     $nombre = trim($_POST['nombre']);
     $nombre = $conn->real_escape_string($nombre); // Evitar inyección SQL

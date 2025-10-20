@@ -1,12 +1,34 @@
 
+//Aparecer o desaparecer el combo
 const ComboTipoRegistro = document.getElementById('ComboTipoRegistro');
 const comboCarreras = document.getElementById('comboCarreras');
 const spanCarreras = document.getElementById('spanCarreras');
+//Validar
+const numeroControl = document.getElementById('numeroControl');
+const nombre = document.getElementById('nombre');
+const paterno = document.getElementById('paterno');
+const materno = document.getElementById('materno');
+//Botón de contraeña
+const CambiarClave = document.getElementById('CambiarClave');
 
 function alSeleccionar() {
-  if (ComboTipoRegistro.value === '2') { //2 es el value: del comboBox de Alumno
+  //Cuando es Auxiliar
+  if(ComboTipoRegistro.value === '1'){
+    //Cambia el número de carácteres
+    numeroControl.value = '';
+    numeroControl.setAttribute('maxlength', 4);
+    CambiarClave.style.display = 'flex';
+  }
+  //Cuando es Alumno
+  if (ComboTipoRegistro.value === '2') { 
+
     comboCarreras.style.display = 'block';
     spanCarreras.style.display = 'block';
+    CambiarClave.style.display = 'flex';
+
+    //Cambia el número de carácteres
+    numeroControl.value = '';
+    numeroControl.setAttribute('maxlength', 8);
 
     // Llama al PHP para obtener las ciudades
       fetch("../../../backend/Usuarios-LAGP/LlenarComboCarreras.php")
@@ -27,6 +49,13 @@ function alSeleccionar() {
   } else {
     comboCarreras.style.display = 'none';
     spanCarreras.style.display = 'none';
+  }
+  //Cuando es Docente
+  if(ComboTipoRegistro.value === '3'){
+    //Cambia el número de carácteres
+    numeroControl.value = '';
+    numeroControl.setAttribute('maxlength', 4);
+    CambiarClave.style.display = 'none';
   }
   //Llenar la tabla
   desplegarTabla();
@@ -65,13 +94,76 @@ function desplegarTabla(){
         });
 }
 
-function validar() {
-  const input = document.getElementById("numeroControl");
-  
-  if (!input.checkValidity()) {
-    alert("❌ Valor inválido: " + input.title);
-    return
+function validar(){
+  //Validar campos
+  if(ComboTipoRegistro.value !== '2' && numeroControl.value.length === 4){
+    console.log("Es docente o auxiliar con NC correcto");
+  }else if(ComboTipoRegistro.value === '2' && numeroControl.value.length === 8){
+    console.log("Es alumno con NC correcto");
+    if(comboCarreras.value !== ''){
+      console.log('Todo correcto');
+    }else{
+      alert("❌ Selecciona una opción de la lista");
+      return false;
+    }
+  }else{
+    alert("❌ Para Alumnos el Número de control es de 8 cifras, mientras que para Auxiliar y Docentes es de 4 cifras");
+    return false;
   }
+
+  if(nombre.checkValidity()){
+      if(paterno.checkValidity()){
+        if(materno.checkValidity()){
+          console.log("Formulario común correcto");
+          return true;
+        }else{
+          alert("❌ Valor inválido: " + materno.title);
+          return false;
+        }
+      }else{
+        alert("❌ Valor inválido: " + paterno.title);
+        return false;
+      }
+    }else{
+      alert("❌ Valor inválido: " + nombre.title);
+      return false;
+    }
+}
+
+function guardar(){
+  //Validar datos antes de guardarlos
+  if(!validar()){
+    return;
+  }
+  //Ya validados guardarlos en variables
+  const ncontrol = numeroControl.value.trim(); //Guarda el contenido en una variable y quita espacios al principio y final
+  const name = nombre.value.trim();
+  const lastname = paterno.value.trim();
+  const lastname2 = materno.value.trim();
+  const career = comboCarreras.value.trim();
+
+  fetch("../../../backend/Usuarios-LAGP/Guardar.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "numeroControl=" + encodeURIComponent(ncontrol) + 
+            "&nombre=" + encodeURIComponent(name) + 
+            "&apellidoPaterno=" + encodeURIComponent(lastname) + 
+            "&apellidoMaterno=" + encodeURIComponent(lastname2) + 
+            "&carrera=" + encodeURIComponent(career)
+  })
+  .then(response => response.text())
+  .then(data => {
+      alert(data);
+      //Poner en blanco los campos
+      numeroControl.value = '';
+      nombre.value = '';
+      paterno.value = '';
+      materno.value = '';
+      comboCarreras.value = '';
+
+      desplegarTabla(); // recarga la tabla automáticamente
+  })
+  .catch(error => console.error("Error:", error));  
 }
 
 window.onload = desplegarTabla;
