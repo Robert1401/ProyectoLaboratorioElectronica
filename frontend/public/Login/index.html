@@ -22,16 +22,34 @@
 
     <h2>Laboratorio de Electrónica Analógica</h2>
 
-    <form id="loginForm">
-      <div class="input-container">
-        <i class="fa fa-user"></i>
-        <input type="text" id="usuario" name="usuario" placeholder="Usuario" required>
-      </div>
+   <form id="loginForm">
+  <div class="input-container">
+    <i class="fa fa-id-card"></i>
+    <input
+      type="text"
+      id="numeroControl"
+      name="numeroControl"
+      placeholder="Número de control"
+      inputmode="numeric"
+      autocomplete="username"
+      required
+      aria-label="Número de control"
+    >
+  </div>
 
-      <div class="input-container">
-        <i class="fa fa-lock"></i>
-        <input type="password" id="password" name="password" placeholder="Contraseña" required>
-      </div>
+
+       <div class="input-container">
+    <i class="fa fa-lock"></i>
+    <input
+      type="password"
+      id="password"
+      name="password"
+      placeholder="Contraseña"
+      autocomplete="current-password"
+      required
+      aria-label="Contraseña"
+    >
+  </div>
 
       <button type="submit">Iniciar sesión</button>
     </form>
@@ -40,7 +58,7 @@
       ¿Es tu primera vez? <a href="../Registro/registro.html">Regístrate aquí</a>
     </div>
   </div>
-
+<div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
   <script src="../src/script.js"></script>
 </body>
 </html>

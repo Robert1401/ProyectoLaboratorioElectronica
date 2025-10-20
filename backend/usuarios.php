@@ -1,152 +1,340 @@
 <?php
+/* =========================================
+   API Personas (Alumnos / Auxiliares / Docentes)
+   En línea con tu HTML/CSS/JS
+========================================= */
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
 
-if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
-    http_response_code(200);
-    exit();
+if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") { http_response_code(200); exit(); }
+
+/* === CONEXIÓN === */
+$host     = "127.0.0.1";   // o "localhost"
+$username = "root";
+$password = "root";        // <-- coloca tu contraseña real
+$database = "Laboratorio_Electronica";
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+try {
+  $conn = new mysqli($host, $username, $password, $database);
+  $conn->set_charset("utf8mb4");
+} catch (Throwable $e) {
+  http_response_code(500);
+  echo json_encode(["error" => "Error de conexión: ".$e->getMessage()], JSON_UNESCAPED_UNICODE);
+  exit();
 }
 
-// Conexión a BD
-$host = "127.0.0.1";
-$user = "root";
-$pass = "root";
-$db = "Laboratorio_Electronica";
-
-$conn = new mysqli($host, $user, $pass, $db);
-if ($conn->connect_error) {
-    echo json_encode(["error" => "Error BD: ".$conn->connect_error]);
-    exit();
+/* === HELPERS === */
+function out($data, $code=200){
+  http_response_code($code);
+  echo json_encode($data, JSON_UNESCAPED_UNICODE);
+  exit();
 }
-$conn->set_charset("utf8mb4");
+function body_json(){
+  $raw = file_get_contents("php://input");
+  if ($raw === false || $raw === "") return [];
+  $d = json_decode($raw, true);
+  return is_array($d) ? $d : [];
+}
+function parse_body_kv(){
+  $raw = file_get_contents("php://input"); $out=[];
+  parse_str($raw, $out);
+  return $out;
+}
 
+/* =========================================
+   RUTAS
+========================================= */
 $method = $_SERVER["REQUEST_METHOD"];
 
-// ================= GET =================
+/* =========== GET =========== */
 if ($method === "GET") {
 
-    // 🔹 Roles
-    if(isset($_GET['roles'])) {
-        $roles = [['rol'=>'Alumno'], ['rol'=>'Auxiliar']];
-        echo json_encode($roles);
-        exit();
-    }
+  // Catálogo de carreras
+  if (isset($_GET["carreras"])) {
+    $sql = "SELECT id_Carrera, nombre FROM Carreras ORDER BY nombre ASC";
+    $rows = [];
+    $res = $conn->query($sql);
+    while ($r = $res->fetch_assoc()) $rows[] = $r;
+    out($rows);
+  }
 
-    // 🔹 Carreras
-    if(isset($_GET['carreras'])) {
-        $res = $conn->query("SELECT id_Carrera, nombre FROM Carreras");
-        $carreras = [];
-        while($row = $res->fetch_assoc()) $carreras[] = $row;
-        echo json_encode($carreras);
-        exit();
-    }
+  // Listado general: alumnos + auxiliares + docentes
+  if (isset($_GET["personas"])) {
+    $todo = [];
 
-    // 🔹 Buscar usuario por número
-    if(isset($_GET['num'])) {
-        $num = $_GET['num'];
+    // Alumnos
+    $resA = $conn->query("
+      SELECT 'Alumno' AS rol,
+             a.numeroControl  AS numero,
+             a.nombre, a.apellidoPaterno, a.apellidoMaterno
+      FROM Alumnos a
+      ORDER BY a.numeroControl ASC
+    ");
+    while ($r = $resA->fetch_assoc()) $todo[] = $r;
 
-        // Alumno
-        $stmt = $conn->prepare("SELECT u.usuario, u.clave, a.numeroControl AS numero, a.nombre, a.apellidoPaterno, a.apellidoMaterno, a.id_Carrera, 'Alumno' AS rol
-                                FROM Usuarios u
-                                LEFT JOIN Alumnos a ON u.numeroControl = a.numeroControl
-                                WHERE a.numeroControl=?");
-        $stmt->bind_param("s", $num);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        if($res->num_rows > 0) {
-            echo json_encode($res->fetch_assoc());
-            exit();
-        }
+    // Auxiliares
+    $resX = $conn->query("
+      SELECT 'Auxiliar' AS rol,
+             x.numeroTrabajador AS numero,
+             x.nombre, x.apellidoPaterno, x.apellidoMaterno
+      FROM Auxiliares x
+      ORDER BY x.numeroTrabajador ASC
+    ");
+    while ($r = $resX->fetch_assoc()) $todo[] = $r;
 
-        // Auxiliar
-        $stmt = $conn->prepare("SELECT u.usuario, u.clave, ax.numeroTrabajador AS numero, ax.nombre, ax.apellidoPaterno, ax.apellidoMaterno, NULL AS id_Carrera, 'Auxiliar' AS rol
-                                FROM Usuarios u
-                                LEFT JOIN Auxiliares ax ON u.numeroTrabajador = ax.numeroTrabajador
-                                WHERE ax.numeroTrabajador=?");
-        $stmt->bind_param("s", $num);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        if($res->num_rows > 0) {
-            echo json_encode($res->fetch_assoc());
-            exit();
-        }
+    // Docentes (ajusta nombre de tabla/campos si los tuyos difieren)
+    $resD = $conn->query("
+      SELECT 'Docente' AS rol,
+             d.numeroTrabajador AS numero,
+             d.nombre, d.apellidoPaterno, d.apellidoMaterno
+      FROM Docentes d
+      ORDER BY d.numeroTrabajador ASC
+    ");
+    while ($r = $resD->fetch_assoc()) $todo[] = $r;
 
-        echo json_encode(["error"=>"Usuario no encontrado"]);
-        exit();
-    }
+    out($todo);
+  }
 
-    echo json_encode(["error"=>"Faltan parámetros"]);
-    exit();
+  // Buscar por número (control o trabajador)
+  if (isset($_GET["num"])) {
+    $buscar = trim($_GET["num"]);
+
+    // 1) Alumno
+    $stA = $conn->prepare("
+      SELECT 'Alumno' AS rol,
+             a.numeroControl, a.nombre, a.apellidoPaterno, a.apellidoMaterno,
+             c.id_Carrera, c.nombre AS carrera
+      FROM Alumnos a
+      LEFT JOIN Carreras c ON c.id_Carrera = a.id_Carrera
+      WHERE a.numeroControl = ?
+      LIMIT 1
+    ");
+    $stA->bind_param("s", $buscar);
+    $stA->execute();
+    $rA = $stA->get_result()->fetch_assoc();
+    if ($rA) out($rA);
+
+    // 2) Auxiliar
+    $stX = $conn->prepare("
+      SELECT 'Auxiliar' AS rol,
+             x.numeroTrabajador, x.nombre, x.apellidoPaterno, x.apellidoMaterno
+      FROM Auxiliares x
+      WHERE x.numeroTrabajador = ?
+      LIMIT 1
+    ");
+    $stX->bind_param("s", $buscar);
+    $stX->execute();
+    $rX = $stX->get_result()->fetch_assoc();
+    if ($rX) out($rX);
+
+    // 3) Docente
+    $stD = $conn->prepare("
+      SELECT 'Docente' AS rol,
+             d.numeroTrabajador, d.nombre, d.apellidoPaterno, d.apellidoMaterno
+      FROM Docentes d
+      WHERE d.numeroTrabajador = ?
+      LIMIT 1
+    ");
+    $stD->bind_param("s", $buscar);
+    $stD->execute();
+    $rD = $stD->get_result()->fetch_assoc();
+    if ($rD) out($rD);
+
+    out(["error" => "No se encontró el número especificado"], 404);
+  }
+
+  out(["error" => "Ruta GET no válida"], 400);
 }
 
-// ================= POST =================
+/* =========== POST (Crear) =========== */
 if ($method === "POST") {
-    $data = json_decode(file_get_contents("php://input"), true);
+  $d = body_json();
+  $rol = trim($d["rol"] ?? "");
 
-    $usuario = $data["usuario"] ?? null;
-    $clave = $data["clave"] ?? null;
-    $rol = $data["rol"] ?? null;
+  if ($rol === "Alumno") {
+    $nombre = trim($d["nombre"] ?? "");
+    $apPat  = trim($d["apellidoPaterno"] ?? "");
+    $apMat  = trim($d["apellidoMaterno"] ?? "");
+    $idCarr = intval($d["id_Carrera"] ?? 0);
+    $numC   = trim((string)($d["numeroControl"] ?? ""));
 
-    if(!$usuario || !$clave || !$rol) {
-        echo json_encode(["error"=>"Faltan campos"]);
-        exit();
+    if (!$nombre || !$apPat || !$apMat || !$idCarr) {
+      out(["error" => "Faltan campos: nombre, apellidos, id_Carrera"], 400);
     }
 
-    $nombre = $data["nombre"] ?? null;
-    $apellidoPaterno = $data["apellidoPaterno"] ?? null;
-    $apellidoMaterno = $data["apellidoMaterno"] ?? null;
-    $id_Carrera = $data["id_Carrera"] ?? null;
-    $numControl = $data["numControl"] ?? null;
-    $numTrabajador = $data["numTrabajador"] ?? null;
-    $claveHash = password_hash($clave, PASSWORD_BCRYPT);
+    // Validar duplicado de número (si viene)
+    if ($numC !== "") {
+      $chk = $conn->prepare("SELECT 1 FROM Alumnos WHERE numeroControl=? LIMIT 1");
+      $chk->bind_param("s", $numC); $chk->execute();
+      if ($chk->get_result()->fetch_row()) out(["error"=>"El número de control ya existe"], 409);
+    }
 
-    $stmt = $conn->prepare("INSERT INTO Usuarios (usuario, numeroControl, numeroTrabajador, clave) VALUES (?,?,?,?)");
-    $stmt->bind_param("siis", $usuario, $numControl, $numTrabajador, $claveHash);
+    $idEstado = 1;
+    if ($numC !== "") {
+      $st = $conn->prepare("INSERT INTO Alumnos(numeroControl,nombre,apellidoPaterno,apellidoMaterno,id_Estado,id_Carrera)
+                            VALUES(?, ?, ?, ?, ?, ?)");
+      $st->bind_param("isssii", $numC, $nombre, $apPat, $apMat, $idEstado, $idCarr);
+      $st->execute();
+      out(["mensaje"=>"Alumno registrado","numeroControl"=>$numC], 201);
+    } else {
+      $st = $conn->prepare("INSERT INTO Alumnos(nombre,apellidoPaterno,apellidoMaterno,id_Estado,id_Carrera)
+                            VALUES(?, ?, ?, ?, ?)");
+      $st->bind_param("sssii", $nombre, $apPat, $apMat, $idEstado, $idCarr);
+      $st->execute();
+      $nuevo = (string)$conn->insert_id;
+      out(["mensaje"=>"Alumno registrado","numeroControl"=>$nuevo], 201);
+    }
+  }
 
-    echo $stmt->execute() ? json_encode(["mensaje"=>"Usuario registrado ✅"]) : json_encode(["error"=>"Error: ".$stmt->error]);
-    exit();
+  if ($rol === "Auxiliar") {
+    $nombre = trim($d["nombre"] ?? "");
+    $apPat  = trim($d["apellidoPaterno"] ?? "");
+    $apMat  = trim($d["apellidoMaterno"] ?? "");
+    $numT   = trim((string)($d["numeroTrabajador"] ?? ""));
+
+    if (!$nombre || !$apPat || !$apMat) {
+      out(["error" => "Faltan campos: nombre y apellidos"], 400);
+    }
+
+    // Validar duplicado si viene número
+    if ($numT !== "") {
+      $chk = $conn->prepare("SELECT 1 FROM Auxiliares WHERE numeroTrabajador=? LIMIT 1");
+      $chk->bind_param("s", $numT); $chk->execute();
+      if ($chk->get_result()->fetch_row()) out(["error"=>"El número de trabajador ya existe"], 409);
+    }
+
+    $idEstado = 1;
+    if ($numT !== "") {
+      $st = $conn->prepare("INSERT INTO Auxiliares(numeroTrabajador,id_Estado,nombre,apellidoPaterno,apellidoMaterno)
+                            VALUES(?, ?, ?, ?, ?)");
+      $st->bind_param("sisss", $numT, $idEstado, $nombre, $apPat, $apMat);
+      $st->execute();
+      out(["mensaje"=>"Auxiliar registrado","numeroTrabajador"=>$numT], 201);
+    } else {
+      $st = $conn->prepare("INSERT INTO Auxiliares(id_Estado,nombre,apellidoPaterno,apellidoMaterno)
+                            VALUES(?, ?, ?, ?)");
+      $st->bind_param("isss", $idEstado, $nombre, $apPat, $apMat);
+      $st->execute();
+      $nuevo = (string)$conn->insert_id;
+      out(["mensaje"=>"Auxiliar registrado","numeroTrabajador"=>$nuevo], 201);
+    }
+  }
+
+  // Si más adelante quieres crear Docentes desde la UI,
+  // aquí podrías añadir el bloque POST para 'Docente'.
+
+  out(["error"=>"Rol inválido. Usa Alumno | Auxiliar"], 400);
 }
 
-// ================= PUT =================
+/* =========== PUT (Actualizar) =========== */
 if ($method === "PUT") {
-    $data = json_decode(file_get_contents("php://input"), true);
-    $usuario = $data["usuario"] ?? null;
-    $clave = $data["clave"] ?? null;
+  $d = body_json();
+  $rol = trim($d["rol"] ?? "");
 
-    if(!$usuario || !$clave) {
-        echo json_encode(["error"=>"Faltan datos"]);
-        exit();
+  if ($rol === "Alumno") {
+    $ref = trim((string)($d["numeroControl"] ?? ""));
+    if ($ref === "") out(["error"=>"Falta 'numeroControl' de referencia"], 400);
+
+    $campos = []; $types=""; $vals=[];
+    foreach (["nombre","apellidoPaterno","apellidoMaterno"] as $c) {
+      if (array_key_exists($c,$d)) { $campos[]="$c=?"; $types.="s"; $vals[] = trim((string)$d[$c]); }
+    }
+    if (array_key_exists("id_Carrera",$d)) { $campos[]="id_Carrera=?"; $types.="i"; $vals[] = intval($d["id_Carrera"]); }
+
+    if ($campos) {
+      $sql = "UPDATE Alumnos SET ".implode(", ",$campos)." WHERE numeroControl=?";
+      $types .= "s"; $vals[] = $ref;
+      $st=$conn->prepare($sql);
+      $st->bind_param($types, ...$vals);
+      $st->execute();
     }
 
-    $claveHash = password_hash($clave,PASSWORD_BCRYPT);
-    $stmt = $conn->prepare("UPDATE Usuarios SET clave=? WHERE usuario=?");
-    $stmt->bind_param("ss", $claveHash, $usuario);
-    $stmt->execute();
+    if (isset($d["numeroControlNuevo"])) {
+      $nuevo = trim((string)$d["numeroControlNuevo"]);
+      if ($nuevo !== "" && $nuevo !== $ref) {
+        $chk = $conn->prepare("SELECT 1 FROM Alumnos WHERE numeroControl=? LIMIT 1");
+        $chk->bind_param("s", $nuevo); $chk->execute();
+        if ($chk->get_result()->fetch_row()) out(["error"=>"El número de control nuevo ya existe"], 409);
 
-    echo $stmt->affected_rows > 0 ? json_encode(["mensaje"=>"Contraseña actualizada ✅"]) : json_encode(["error"=>"Usuario no existe"]);
-    exit();
+        $u = $conn->prepare("UPDATE Alumnos SET numeroControl=? WHERE numeroControl=?");
+        $u->bind_param("ss", $nuevo, $ref);
+        $u->execute();
+      }
+    }
+    out(["mensaje"=>"Alumno actualizado"]);
+  }
+
+  if ($rol === "Auxiliar") {
+    $ref = trim((string)($d["numeroTrabajador"] ?? ""));
+    if ($ref === "") out(["error"=>"Falta 'numeroTrabajador' de referencia"], 400);
+
+    $campos = []; $types=""; $vals=[];
+    foreach (["nombre","apellidoPaterno","apellidoMaterno"] as $c) {
+      if (array_key_exists($c,$d)) { $campos[]="$c=?"; $types.="s"; $vals[] = trim((string)$d[$c]); }
+    }
+    if ($campos) {
+      $sql = "UPDATE Auxiliares SET ".implode(", ",$campos)." WHERE numeroTrabajador=?";
+      $types .= "s"; $vals[] = $ref;
+      $st=$conn->prepare($sql);
+      $st->bind_param($types, ...$vals);
+      $st->execute();
+    }
+
+    if (isset($d["numeroTrabajadorNuevo"])) {
+      $nuevo = trim((string)$d["numeroTrabajadorNuevo"]);
+      if ($nuevo !== "" && $nuevo !== $ref) {
+        $chk = $conn->prepare("SELECT 1 FROM Auxiliares WHERE numeroTrabajador=? LIMIT 1");
+        $chk->bind_param("s", $nuevo); $chk->execute();
+        if ($chk->get_result()->fetch_row()) out(["error"=>"El número de trabajador nuevo ya existe"], 409);
+
+        $u = $conn->prepare("UPDATE Auxiliares SET numeroTrabajador=? WHERE numeroTrabajador=?");
+        $u->bind_param("ss", $nuevo, $ref);
+        $u->execute();
+      }
+    }
+    out(["mensaje"=>"Auxiliar actualizado"]);
+  }
+
+  // Si más adelante quieres editar Docentes, aquí puedes agregar el bloque PUT 'Docente'.
+
+  out(["error"=>"Rol inválido. Usa Alumno | Auxiliar"], 400);
 }
 
-// ================= DELETE =================
+/* =========== DELETE (Eliminar) =========== */
 if ($method === "DELETE") {
-    $data = json_decode(file_get_contents("php://input"), true);
-    $usuario = $data["usuario"] ?? null;
+  $kv = parse_body_kv();
+  $numC = isset($kv["numeroControl"]) ? trim((string)$kv["numeroControl"]) : "";
+  $numT = isset($kv["numeroTrabajador"]) ? trim((string)$kv["numeroTrabajador"]) : "";
 
-    if(!$usuario) {
-        echo json_encode(["error"=>"Falta usuario"]);
-        exit();
+  if ($numC !== "") {
+    $st = $conn->prepare("DELETE FROM Alumnos WHERE numeroControl=?");
+    $st->bind_param("s", $numC);
+    $st->execute();
+    if ($st->affected_rows === 0) out(["error"=>"Alumno no encontrado"], 404);
+    out(["mensaje"=>"Alumno eliminado"]);
+  }
+
+  if ($numT !== "") {
+    // El mismo endpoint te sirve para eliminar Auxiliar o Docente si compartes clave 'numeroTrabajador'
+    // (si quieres separar Docentes, crea otro branch similar apuntando a su tabla).
+    $st = $conn->prepare("DELETE FROM Auxiliares WHERE numeroTrabajador=?");
+    $st->bind_param("s", $numT);
+    $st->execute();
+    if ($st->affected_rows === 0) {
+      // Intento en docentes si no estaba en auxiliares
+      $st2 = $conn->prepare("DELETE FROM Docentes WHERE numeroTrabajador=?");
+      $st2->bind_param("s", $numT);
+      $st2->execute();
+      if ($st2->affected_rows === 0) out(["error"=>"Registro no encontrado"], 404);
     }
+    out(["mensaje"=>"Registro eliminado"]);
+  }
 
-    $stmt = $conn->prepare("DELETE FROM Usuarios WHERE usuario=?");
-    $stmt->bind_param("s", $usuario);
-    $stmt->execute();
-
-    echo $stmt->affected_rows > 0 ? json_encode(["mensaje"=>"Usuario eliminado 🗑️"]) : json_encode(["error"=>"Usuario no existe"]);
-    exit();
+  out(["error"=>"Falta numeroControl o numeroTrabajador"], 400);
 }
 
-echo json_encode(["error"=>"Método no soportado"]);
-$conn->close();
-?>
+/* Ruta no reconocida */
+out(["error"=>"Ruta no válida"], 400);

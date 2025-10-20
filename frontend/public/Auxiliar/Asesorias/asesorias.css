@@ -192,16 +192,16 @@ tr:hover td {
 
 /* === RESPONSIVO === */
 @media (max-width: 900px) {
-  .fila {
+  .formulario {
     flex-direction: column;
-    align-items: center;
-  }
-
-  .formulario, .tabla {
-    width: 90%;
+    gap: 10px;
   }
 
   header h1 {
-    font-size: 1.6em;
+    font-size: 1.7em;
+  }
+
+  .logo {
+    width: 65px;
   }
 }

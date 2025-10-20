@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Registro de Alumno</title>
   <link rel="stylesheet" href="registro.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -22,46 +22,46 @@
     <p id="mensaje" class="mensaje"></p>
 
     <form id="registroForm">
-      <div class="input-container">
-        <i class="fa fa-user"></i>
-        <input type="text" id="nombre" placeholder="Nombre" required>
-      </div>
+  <div class="input-container">
+    <i class="fa fa-id-card"></i>
+    <input type="text" id="numeroControl" placeholder="Número de Control" required>
+  </div>
 
-      <div class="input-container">
-        <i class="fa fa-user"></i>
-        <input type="text" id="apellidoPaterno" placeholder="Apellido Paterno" required>
-      </div>
+  <div class="input-container">
+    <i class="fa fa-user"></i>
+    <input type="text" id="nombre" placeholder="Nombre" required>
+  </div>
 
-      <div class="input-container">
-        <i class="fa fa-user"></i>
-        <input type="text" id="apellidoMaterno" placeholder="Apellido Materno" required>
-      </div>
+  <div class="input-container">
+    <i class="fa fa-user"></i>
+    <input type="text" id="apellidoPaterno" placeholder="Apellido Paterno" required>
+  </div>
 
-      <div class="input-container">
-        <select id="carrera" required>
-          <option value="">Selecciona la Carrera</option>
-          <option value="11">Ingeniería Electrónica</option>
-          <option value="12">Ingeniería en Sistemas Computacionales</option>
-        </select>
-      </div>
+  <div class="input-container">
+    <i class="fa fa-user"></i>
+    <input type="text" id="apellidoMaterno" placeholder="Apellido Materno" required>
+  </div>
 
-      <div class="input-container">
-        <i class="fa fa-user"></i>
-        <input type="text" id="usuario" placeholder="Usuario" required>
-      </div>
+  <div class="input-container">
+    <select id="carrera" required>
+      <option value="">Selecciona la Carrera</option>
+      <option value="11">Ingeniería Electrónica</option>
+      <option value="12">Ingeniería en Sistemas Computacionales</option>
+    </select>
+  </div>
 
-      <div class="input-container">
-        <i class="fa fa-lock"></i>
-        <input type="password" id="clave" placeholder="Contraseña" maxlength="10" required>
-      </div>
+  <div class="input-container">
+    <i class="fa fa-lock"></i>
+    <input type="password" id="clave" placeholder="Contraseña" maxlength="60" required>
+  </div>
 
-      <div class="input-container">
-        <i class="fa fa-lock"></i>
-        <input type="password" id="confirmarClave" placeholder="Confirmar Contraseña" maxlength="10" required>
-      </div>
+  <div class="input-container">
+    <i class="fa fa-lock"></i>
+    <input type="password" id="confirmarClave" placeholder="Confirmar Contraseña" maxlength="60" required>
+  </div>
 
-      <button type="submit" class="btn-submit">Registrarse</button>
-    </form>
+  <button type="submit" class="btn-submit">Registrarse</button>
+</form>
 
     <p class="register-text">
       ¿Ya tienes una cuenta? <a href="../Login/index.html">Inicia sesión aquí</a>

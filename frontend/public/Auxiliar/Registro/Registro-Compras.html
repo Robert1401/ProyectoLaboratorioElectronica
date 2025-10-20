@@ -1,75 +1,117 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Registro de Compra de Material</title>
-  <link rel="stylesheet" href="Registro-Compras.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="Registro-Compras.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <style>
+    /* Mini toast para mensajes */
+    #toast {
+      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+      background: #1f2937; color: #fff; padding: 10px 14px; border-radius: 8px;
+      font-size: 14px; box-shadow: 0 8px 20px rgba(0,0,0,.25); opacity: 0; pointer-events: none;
+      transition: opacity .25s ease;
+    }
+    #toast.show { opacity: 1; }
+  </style>
 </head>
 <body>
   <div class="container">
     <!-- ENCABEZADO -->
     <header>
-      <img src="/frontend/public/assets/logo1.png" alt="TecNM" class="logo">
-      <h1>Registro de Compra<br>Material</h1>
-      <img src="/frontend/public/assets/escudo.png" alt="Escudo" class="logo">
+      <img src="../../assets/logo1.png" alt="TecNM" class="logo"/>
+      <div class="titulo">
+        <h1>Registro de Compra</h1>
+        <h2>Material</h2>
+      </div>
+      <img src="../../assets/escudo.png" alt="Escudo" class="logo"/>
     </header>
 
-    <!-- FORMULARIO Y TABLA -->
-    <div class="fila">
-      <!-- FORMULARIO -->
-      <div class="formulario">
-        <label for="fecha">Fecha:</label>
-        <input type="date" id="fecha">
+    <!-- TARJETA / ÁREA DE TRABAJO -->
+    <section class="card">
+      <!-- FILA SUPERIOR: Fecha / Auxiliar -->
+      <div class="top-row">
+        <div class="field-line">
+          <label for="fecha">Fecha:</label>
+          <input type="date" id="fecha" class="input-line"/>
+        </div>
 
-        <label for="auxiliar">Auxiliar:</label>
-        <input type="text" id="auxiliar" placeholder="Nombre del auxiliar">
-
-        <label for="material">Material:</label>
-        <select id="material">
-          <option value="">Seleccione un material</option>
-          <option value="Resistor">Resistor</option>
-          <option value="Capacitor">Capacitor</option>
-          <option value="Protoboard">Protoboard</option>
-        </select>
-
-        <label for="cantidad">Cantidad:</label>
-        <div class="cantidad-container">
-          <input type="number" id="cantidad" min="1" value="1">
-          <button id="agregar" class="btn"><i class="fas fa-plus"></i> Agregar</button>
+        <div class="field-line">
+          <label for="auxiliar">Auxiliar:</label>
+          <input type="text" id="auxiliar" class="input-line" placeholder="" readonly/>
         </div>
       </div>
 
-      <!-- TABLA -->
-      <div class="tabla">
-        <table id="tablaMateriales">
-          <thead>
-            <tr>
-              <th>Nombre del producto</th>
-              <th>Cantidad</th>
-              <th>Fecha de ingreso del material</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <!-- FILA MIDDLE: Material / Cantidad / Agregar -->
+      <div class="middle-row">
+        <div class="field">
+          <label for="material">Material:</label>
+          <div class="select-wrap">
+            <select id="material">
+              <option value="">Seleccione un material</option>
+              <!-- Opciones reales las carga el JS desde la API -->
+            </select>
+            <i class="fa-solid fa-caret-down caret"></i>
+          </div>
+        </div>
+
+        <div class="field qty-wrap">
+          <label for="cantidad">Cantidad:</label>
+          <div class="cantidad-container">
+            <input type="number" id="cantidad" min="1" value="1"/>
+            <button id="plusQty" class="btn btn-add" title="Aumentar cantidad">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="agregar" title="Agregar a la tabla">
+          Agregar
+        </button>
       </div>
-    </div>
 
-    <!-- BOTONES -->
-    <footer>
-      <button class="btn" id="guardar"><i class="fas fa-save"></i> Guardar</button>
-      <button class="btn" id="actualizar"><i class="fas fa-sync-alt"></i> Actualizar</button>
-      <button class="btn" id="eliminar"><i class="fas fa-trash"></i> Eliminar</button>
+      <!-- CONTENIDO: TABLA + BOTONES LATERALES -->
+      <div class="content-row">
+        <div class="tabla">
+          <table id="tablaMateriales">
+            <thead>
+              <tr>
+                <th>Nombre del producto</th>
+                <th>Cantidad</th>
+                <th>Fecha de ingreso del material</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
 
-      <!-- ÍCONOS DE NAVEGACIÓN -->
+        <div class="side-actions">
+          <button class="btn btn-secondary" id="actualizar">Actualizar</button>
+          <button class="btn btn-danger" id="eliminar">Eliminar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER: Guardar + iconos -->
+    <footer class="footer-bar">
+      <button class="btn btn-primary" id="guardar">
+        <i class="fas fa-save"></i> Guardar
+      </button>
       <div class="iconos">
-        <a href="/frontend/public/Auxiliar/Usuarios/" class="icono"><i class="fas fa-arrow-left"></i></a>
-        <a href="/frontend/public/Auxiliar/auxiliar.html" class="icono"><i class="fas fa-home"></i></a>
+        <a href="../auxiliar.html" class="icono"><i class="fa-solid fa-arrow-left"></i></a>
+        <a href="../../Login/index.html" class="icono home-fab" aria-label="Inicio">
+          <i class="fa-solid fa-house"></i>
+        </a>
       </div>
     </footer>
   </div>
 
-  <script src="/frontend/src/Registro-Compras.js"></script>
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <!-- Tu JS -->
+  <script src="../../src/Registro-Compras.js"></script>
 </body>
 </html>

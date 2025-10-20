@@ -50,6 +50,21 @@
     </footer>
   </div>
 
-  <script src="../../src/carreras.js"></script>
+<!-- Toast (opcional, si ya lo tienes puedes omitir este) -->
+<div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<!-- MODAL CONFIRM -->
+<div id="confirm" class="confirm-backdrop" aria-hidden="true">
+  <div class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirm-text">
+    <p id="confirm-text">¿Seguro que deseas continuar?</p>
+    <div class="confirm-actions">
+      <button type="button" class="btn btn-cancelar" id="confirm-cancelar">Cancelar</button>
+      <button type="button" class="btn btn-aceptar"  id="confirm-aceptar">Sí, continuar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Deja SIEMPRE tu js al final del body -->
+<script src="../../src/carreras.js"></script>
 </body>
 </html>
