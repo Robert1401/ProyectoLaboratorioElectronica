@@ -17,14 +17,18 @@ function cargarMaterias() {
                         nombreOriginal = materia.nombre; // Guardamos el nombre actual
                         document.getElementById("nombreMateria").value = materia.nombre; // cargamos input
                     });
-
+                    
                     tbody.appendChild(fila);
                 });
             } else {
-                tbody.innerHTML = '<tr><td colspan="3">No hay datos</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="1">No hay datos</td></tr>';
             }
         })
-        .catch(error => console.error('Error al traer los datos:', error));
+        .catch(error => {
+            console.error('Servicio MySQL Apagado:', error);
+            const tbody = document.querySelector('#tablaDinamica tbody');
+            tbody.innerHTML = '<tr><td colspan="1">⚠️ Error al cargar los datos</td></tr>';
+        });
 }
 
 // --- Guardar nueva materia ---

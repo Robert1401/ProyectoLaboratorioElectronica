@@ -19,7 +19,11 @@
         <form id="Formulario" action="">
             <div id="Registro">
                 <span>Nombre de la materia:</span>
-                <input type="text" placeholder=" Escribe ..." minlength="1" maxlength="50" id="nombreMateria">
+                <input  type="text" placeholder=" Escribe ..." minlength="1" maxlength="50" id="nombreMateria" required
+                        pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$"
+                        title="Introduce solo letras"
+                        oninput="this.value = this.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, '')"
+                >
             </div>
             <div id="Botones">
                 <button title="Escribe algo en el campo para guardar" id="Guardar" type="button">
