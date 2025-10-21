@@ -170,8 +170,9 @@ function guardar(){
   if(!validar()){
     return;
   }
+
   //Ya validados guardarlos en variables
-  const ncontrol = numeroControl.value.trim(); //Guarda el contenido en una variable y quita espacios al principio y final
+  const ncontrol = numeroControl.value.trim();
   const name = nombre.value.trim();
   const lastname = paterno.value.trim();
   const lastname2 = materno.value.trim();
@@ -190,16 +191,98 @@ function guardar(){
   .then(response => response.text())
   .then(data => {
       alert(data);
-      //Poner en blanco los campos
+      //Limpiar campos
       numeroControl.value = '';
       nombre.value = '';
       paterno.value = '';
       materno.value = '';
       comboCarreras.value = '';
 
-      desplegarTabla(); // recarga la tabla automáticamente
+      desplegarTabla(); //Recarga la tabla automáticamente
   })
   .catch(error => console.error("Error:", error));  
 }
 
+function modificar() {
+  if (!fila) {
+    alert("⚠️ Selecciona primero una fila para modificar.");
+    return;
+  }
+
+  // Validar los datos antes de enviarlos
+  if (!validar()) {
+    return;
+  }
+
+  const ncontrol = numeroControl.value.trim();
+  const name = nombre.value.trim();
+  const lastname = paterno.value.trim();
+  const lastname2 = materno.value.trim();
+  const career = comboCarreras.value.trim();
+  const tipo = ComboTipoRegistro.value;
+
+  fetch("../../../backend/Usuarios-LAGP/Modificar.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body:
+      "id=" + encodeURIComponent(tipo) +
+      "&numeroControl=" + encodeURIComponent(ncontrol) +
+      "&nombre=" + encodeURIComponent(name) +
+      "&apellidoPaterno=" + encodeURIComponent(lastname) +
+      "&apellidoMaterno=" + encodeURIComponent(lastname2) +
+      "&carrera=" + encodeURIComponent(career)
+  })
+    .then(response => response.text())
+    .then(data => {
+      alert(data);
+      // Limpiar campos después de modificar
+      numeroControl.value = "";
+      nombre.value = "";
+      paterno.value = "";
+      materno.value = "";
+      comboCarreras.value = "";
+      fila = null;
+
+      // Recargar la tabla
+      desplegarTabla();
+    })
+    .catch(error => {
+      console.error("Error al modificar:", error);
+      alert("❌ Ocurrió un error al intentar modificar.");
+    });
+}
+
+function eliminar() {
+    if (!fila) {
+        alert("⚠️ Selecciona primero un elemento de la tabla para eliminar");
+        return;
+    }
+
+    // Confirmación de borrado lógico
+    if (!confirm("¿Seguro que deseas eliminar (cambio de estado) este registro?")) return;
+
+    fetch("../../../backend/Usuarios-LAGP/Eliminar.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "numeroControl=" + encodeURIComponent(numeroControl.value) +
+              "&tipo=" + encodeURIComponent(ComboTipoRegistro.value)
+    })
+    .then(response => response.text())
+    .then(data => {
+        alert(data);
+
+        // Limpiar campos
+        numeroControl.value = '';
+        nombre.value = '';
+        paterno.value = '';
+        materno.value = '';
+        comboCarreras.value = '';
+
+        fila = null;
+        desplegarTabla(); // recarga la tabla
+    })
+    .catch(error => console.error("Error:", error));
+}
+
+//Se ejecuta al cargar el html
 window.onload = desplegarTabla;
