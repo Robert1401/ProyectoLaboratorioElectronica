@@ -170,8 +170,9 @@ function guardar(){
   if(!validar()){
     return;
   }
+
   //Ya validados guardarlos en variables
-  const ncontrol = numeroControl.value.trim(); //Guarda el contenido en una variable y quita espacios al principio y final
+  const ncontrol = numeroControl.value.trim();
   const name = nombre.value.trim();
   const lastname = paterno.value.trim();
   const lastname2 = materno.value.trim();
@@ -190,14 +191,14 @@ function guardar(){
   .then(response => response.text())
   .then(data => {
       alert(data);
-      //Poner en blanco los campos
+      //Limpiar campos
       numeroControl.value = '';
       nombre.value = '';
       paterno.value = '';
       materno.value = '';
       comboCarreras.value = '';
 
-      desplegarTabla(); // recarga la tabla automáticamente
+      desplegarTabla(); //Recarga la tabla automáticamente
   })
   .catch(error => console.error("Error:", error));  
 }
