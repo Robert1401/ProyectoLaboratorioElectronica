@@ -284,5 +284,56 @@ function eliminar() {
     .catch(error => console.error("Error:", error));
 }
 
+function cambiarClave() {
+    if (!fila) {
+        alert("⚠️ Selecciona primero un elemento de la tabla.");
+        return;
+    }
+
+    // Solicitar autorización del auxiliar
+    const auxNC = prompt("Número de control del auxiliar que autoriza:");
+    const auxClave = prompt("Contraseña del auxiliar:");
+
+    if (!auxNC || !auxClave) {
+        alert("⚠️ Proceso cancelado");
+        return;
+    }
+
+    // Validar auxiliar en backend
+    fetch("../../../backend/Usuarios-LAGP/ValidarAuxiliar.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "numeroControl=" + encodeURIComponent(auxNC) +
+              "&clave=" + encodeURIComponent(auxClave)
+    })
+    .then(res => res.text())
+    .then(res => {
+        if(res !== "OK") {
+            alert("❌ Autorización inválida: " + res);
+            return;
+        }
+
+        // Solicitar nueva contraseña
+        const nuevaClave = prompt("Ingresa la nueva contraseña del usuario " + numeroControl.value + " :");
+        if(!nuevaClave || nuevaClave.length < 4) {
+            alert("❌ Contraseña inválida");
+            return;
+        }
+
+        // Llamar a PHP para insertar o actualizar
+        fetch("../../../backend/Usuarios-LAGP/CambiarClave.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "numeroControl=" + encodeURIComponent(numeroControl.value) +
+                  "&clave=" + encodeURIComponent(nuevaClave)
+        })
+        .then(r => r.text())
+        .then(mensaje => alert(mensaje))
+        .catch(err => console.error("Error:", err));
+
+    })
+    .catch(err => console.error("Error:", err));
+}
+
 //Se ejecuta al cargar el html
 window.onload = desplegarTabla;
