@@ -31,17 +31,17 @@ try {
     $stmtExist->close();
 
     if ($existsInUsuarios) {
-        // 2) Contar cuantos usuarios hay en total
-        $stmtCount = $conn->prepare("SELECT COUNT(*) AS total FROM Usuarios");
+        // 2) Contar cuántos usuarios de 4 cifras hay en total
+        $stmtCount = $conn->prepare("SELECT COUNT(*) AS total FROM Usuarios WHERE LENGTH(numeroControl) = 4");
         $stmtCount->execute();
         $resCount = $stmtCount->get_result();
         $row = $resCount->fetch_assoc();
-        $totalUsuarios = (int)$row['total'];
+        $totalUsuarios4Cifras = (int)$row['total'];
         $stmtCount->close();
 
-        // 3) Si es el último usuario, no permitir eliminar
-        if ($totalUsuarios <= 1) {
-            echo "⚠️ No se puede eliminar: es el último usuario registrado en la tabla Usuarios.";
+        // 3) Si es el último usuario de 4 cifras, no permitir eliminar
+        if ($totalUsuarios4Cifras <= 1) {
+            echo "⚠️ No se puede eliminar porque es el último auxiliar con rol de usuario";
             $conn->close();
             exit;
         }
