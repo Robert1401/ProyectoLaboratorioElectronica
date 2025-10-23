@@ -272,3 +272,10 @@ tbody tr.activa:hover{ background:#ffe8e8; }
   #AreaTrabajo{ background:#fdfdfd; }
   .input{ background:#fff; color:#111; }
 }
+
+button:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+  filter:grayscale(.4);
+  box-shadow:none;
+}

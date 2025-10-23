@@ -1,64 +1,71 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agregar Material</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CRUD Material</title>
+
   <link rel="stylesheet" href="material.css">
-  <script defer src="../../src/material.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js" defer></script>
+  <script src="../../src/material.js" defer></script>
 </head>
 <body>
   <div class="container">
-    <!-- Encabezado -->
     <header>
-      <img src="../../assets/logo1.png" alt="TecNM" class="logo">
-      <h1>Agregar Material</h1>
+      <img src="../../assets/logo1.png" alt="Logo TecNM" class="logo">
+      <h1>Materiales</h1>
       <img src="../../assets/escudo.png" alt="Escudo" class="logo">
     </header>
 
-    <!-- Fila principal -->
     <div class="fila">
       <!-- Formulario -->
-      <div class="formulario">
-        <label for="nombre">Nombre:</label>
-        <input type="text" id="nombre" placeholder="Ingrese nombre del material">
+   <div class="formulario">
+  <label for="clave">Clave:</label>
+  <input type="text" id="clave" placeholder="Ej. MAT-001" autocomplete="off">
 
-        <label for="clave">Clave:</label>
-        <input type="text" id="clave" placeholder="Ingrese clave del material">
+  <label for="nombre">Nombre:</label>
+  <input type="text" id="nombre" placeholder="Ingrese el nombre del material" autocomplete="off">
+</div>
 
-        <label for="cantidad">Cantidad:</label>
-        <input type="number" id="cantidad" placeholder="Ingrese cantidad disponible">
-      </div>
 
       <!-- Tabla -->
       <div class="tabla">
         <table id="tablaMateriales">
           <thead>
             <tr>
-              <th>Nombre</th>
               <th>Clave</th>
-              <th>Cantidad</th>
+              <th>Nombre</th>
             </tr>
           </thead>
-          <tbody>
-            <!-- Se agregarán dinámicamente las filas -->
-          </tbody>
+          <tbody><!-- Filas dinámicas --></tbody>
         </table>
       </div>
     </div>
 
-    <!-- Botones -->
     <footer>
-      <button class="btn" id="btnGuardar"><i class="fas fa-save"></i> Guardar</button>
-      <button class="btn" id="btnActualizar"><i class="fas fa-sync-alt"></i> Actualizar</button>
-      <button class="btn" id="btnEliminar"><i class="fas fa-trash-alt"></i> Eliminar</button>
+      <button class="btn" id="btnGuardar"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
+      <button class="btn" id="btnActualizar"><i class="fa-solid fa-rotate"></i> Actualizar</button>
+      <button class="btn" id="btnEliminar"><i class="fa-solid fa-trash"></i> Eliminar</button>
 
       <div class="iconos">
-         <a href="../auxiliar.html" class="icono"><i class="fa-solid fa-arrow-left"></i></a>
-        <a href="../../Login/index.html" class="icono"><i class="fa-solid fa-house"></i></a>
+        <a href="javascript:void(0)" class="icono icono-back" title="Regresar" id="btnBack" aria-label="Regresar">
+          <svg viewBox="0 0 24 24" class="svg-icon">
+            <path d="M14 7l-5 5 5 5M19 12H9" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <a href="auxiliar.html" class="icono icono-home" title="Inicio" aria-label="Inicio">
+          <svg viewBox="0 0 24 24" class="svg-icon">
+            <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5z" fill="currentColor"/>
+          </svg>
+        </a>
       </div>
     </footer>
   </div>
+
+  <script>
+    document.getElementById('btnBack')?.addEventListener('click', () => {
+      if (history.length > 1) history.back(); else window.location.href = 'auxiliar.html';
+    });
+  </script>
 </body>
 </html>

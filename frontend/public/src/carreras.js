@@ -1,17 +1,21 @@
-const tabla = document.getElementById("tabla-carreras");
-const inputNombre = document.getElementById("nombre");
-let carreras = [];
-let idSeleccionado = null;
+const tabla        = document.getElementById("tabla-carreras");
+const inputNombre  = document.getElementById("nombre");
 
-// Apunta a tu backend (ruta relativa evita mostrar host/puerto)
+const btnGuardar    = document.querySelector(".guardar");
+const btnActualizar = document.querySelector(".actualizar");
+const btnEliminar   = document.querySelector(".eliminar");
+
+let carreras = [];
+let idSeleccionado   = null;   // id de la fila seleccionada (null = modo Nueva)
+let nombreOriginal   = "";     // nombre original de la fila seleccionada (para detectar "dirty")
+
 const API = "/backend/carreras.php";
 
-// ========== Toast bonito ==========
+/* ========== Toast ========== */
 function showToast(message, type = "info", duration = 2200) {
   const host = document.getElementById("toast");
   if (!host) { alert(message); return; }
-
-  const icons = { success: "✓", error: "✕", info: "ℹ︎" };
+  const icons = { success: "✓", error: "✕", info: "ℹ︎", warn:"⚠︎" };
   host.innerHTML = `
     <div class="toast-card ${type}" role="status" aria-live="polite" aria-atomic="true">
       <div class="toast-icon">${icons[type] || "ℹ︎"}</div>
@@ -23,7 +27,7 @@ function showToast(message, type = "info", duration = 2200) {
   host.onclick = () => { clearTimeout(t); hide(); };
 }
 
-// ========== Confirm robusto ==========
+/* ========== Confirm ========== */
 function showConfirm(texto) {
   const modal     = document.getElementById("confirm");
   const card      = modal?.querySelector(".confirm-card");
@@ -32,13 +36,10 @@ function showConfirm(texto) {
   const btnCancel = document.getElementById("confirm-cancelar");
 
   return new Promise((resolve) => {
-    // Fallback si no existe el modal en el HTML
     if (!modal || !card || !label || !btnOk || !btnCancel) {
-      const ok = window.confirm(texto || "¿Seguro que deseas continuar?");
-      resolve(ok);
+      resolve(window.confirm(texto || "¿Seguro que deseas continuar?"));
       return;
     }
-
     label.textContent = texto || "¿Seguro que deseas continuar?";
     modal.classList.add("open");
     modal.setAttribute("aria-hidden", "false");
@@ -48,39 +49,90 @@ function showConfirm(texto) {
     const onBackdrop= (e) => { if (!card.contains(e.target)) close(false); };
     const onKey     = (e) => { if (e.key === "Escape") close(false); if (e.key === "Enter") close(true); };
 
-    function close(v) {
+    function close(v){
       modal.classList.remove("open");
-      modal.setAttribute("aria-hidden", "true");
-      btnOk.removeEventListener("click", onOk);
-      btnCancel.removeEventListener("click", onCancel);
-      modal.removeEventListener("click", onBackdrop);
-      window.removeEventListener("keydown", onKey);
+      modal.setAttribute("aria-hidden","true");
+      btnOk.removeEventListener("click",onOk);
+      btnCancel.removeEventListener("click",onCancel);
+      modal.removeEventListener("click",onBackdrop);
+      window.removeEventListener("keydown",onKey);
       resolve(v);
     }
-
-    btnOk.addEventListener("click", onOk, { once: true });
-    btnCancel.addEventListener("click", onCancel, { once: true });
-    modal.addEventListener("click", onBackdrop);
-    window.addEventListener("keydown", onKey);
+    btnOk.addEventListener("click",onOk,{once:true});
+    btnCancel.addEventListener("click",onCancel,{once:true});
+    modal.addEventListener("click",onBackdrop);
+    window.addEventListener("keydown",onKey);
   });
 }
 
-// ========== Helper fetch JSON ==========
+/* ========== Fetch helper ========== */
 async function fetchJson(url, options = {}) {
   const res = await fetch(url, options);
-  let data;
-  try { data = await res.json(); } catch { data = {}; }
-
-  if (!res.ok) {
-    const msg = data.mensaje || data.error || `Ocurrió un error (${res.status}).`;
-    throw new Error(msg);
-  }
+  let data; try { data = await res.json(); } catch { data = {}; }
+  if (!res.ok) throw new Error(data.mensaje || data.error || `Error (${res.status}).`);
   if (data.error) throw new Error(data.error);
   return data;
 }
 
-// ========== Cargar al iniciar ==========
-document.addEventListener("DOMContentLoaded", cargarCarreras);
+/* ========== Normalizador para comparar nombres ========== */
+const norm = s => (s||"").normalize("NFKC").trim().toLowerCase().replace(/\s+/g," ");
+
+/* ========== Estados de botones (máquina de estados) ========== */
+function isDirty(){
+  // Cambió el texto respecto al original en modo Edición
+  if (idSeleccionado == null) return false;
+  return norm(inputNombre.value) !== norm(nombreOriginal);
+}
+
+function updateButtonStates(){
+  const hayTexto = (inputNombre.value || "").trim().length > 0;
+
+  if (idSeleccionado == null) {
+    // Modo NUEVA
+    btnGuardar.disabled    = !hayTexto;
+    btnActualizar.disabled = true;
+    btnEliminar.disabled   = true;
+    return;
+  }
+
+  // Modo EDICIÓN
+  const changed = isDirty();
+  btnGuardar.disabled    = true;              // no se guarda en edición
+  btnActualizar.disabled = !hayTexto || !changed; // actualizar solo si hay cambios
+  btnEliminar.disabled   = changed;           // si hay cambios => bloqueo de eliminar
+
+  // Si está bloqueado por "dirty", avisito en title (opcional)
+  btnEliminar.title = changed ? "Tienes cambios sin guardar. Actualiza primero." : "";
+}
+
+/* Helpers de selección */
+function limpiarSeleccion(){
+  [...tabla.querySelectorAll("tr")].forEach(tr => tr.classList.remove("seleccionada"));
+  idSeleccionado = null;
+  nombreOriginal = "";
+  inputNombre.value = "";
+  updateButtonStates();
+}
+function seleccionarFilaVisual(fila){
+  [...tabla.querySelectorAll("tr")].forEach(tr => tr.classList.remove("seleccionada"));
+  fila?.classList.add("seleccionada");
+}
+
+/* ========== Cargar al iniciar ========== */
+document.addEventListener("DOMContentLoaded", async () => {
+  await cargarCarreras();
+  updateButtonStates();
+  inputNombre.addEventListener("input", () => {
+    // Mostrar “modo escribiendo”
+    if (idSeleccionado == null) {
+      // Nueva: habilitar Guardar cuando hay texto
+      updateButtonStates();
+    } else {
+      // Edición: si cambias, habilita Actualizar y bloquea Eliminar
+      updateButtonStates();
+    }
+  });
+});
 
 async function cargarCarreras() {
   try {
@@ -92,33 +144,32 @@ async function cargarCarreras() {
   }
 }
 
-// ========== Render tabla ==========
+/* ========== Render tabla ========== */
 function mostrarTabla() {
   tabla.innerHTML = "";
   carreras.forEach(c => {
     const tr = document.createElement("tr");
     tr.innerHTML = `<td>${c.nombre}</td>`;
-    tr.onclick = () => seleccionarCarrera(c, tr);
+    tr.onclick = () => {
+      // Selección -> entrar a modo EDICIÓN
+      seleccionarFilaVisual(tr);
+      idSeleccionado = c.id_Carrera;
+      nombreOriginal = c.nombre;
+      inputNombre.value = c.nombre;
+      updateButtonStates(); // aquí se habilita Eliminar y (si no cambiaste) Actualizar queda gris
+    };
     tabla.appendChild(tr);
   });
 }
 
-function seleccionarCarrera(c, fila) {
-  [...tabla.querySelectorAll("tr")].forEach(tr => tr.classList.remove("seleccionada"));
-  fila?.classList.add("seleccionada");
-  inputNombre.value = c.nombre; // autocompleta
-  idSeleccionado = c.id_Carrera;
-}
-
-// ========== Guardar ==========
-document.querySelector(".guardar").addEventListener("click", async () => {
+/* ========== Guardar ========== */
+btnGuardar.addEventListener("click", async () => {
   const nombre = (inputNombre.value || "").trim();
   if (!nombre) { showToast("Ingresa un nombre de carrera.", "info"); return; }
 
-  // Evitar duplicados en cliente (insensible a mayúsculas/espacios)
-  const norm = s => s.normalize("NFKC").trim().toLowerCase();
-  const yaExiste = carreras.some(c => norm(c.nombre) === norm(nombre));
-  if (yaExiste) { showToast("❗ Esa carrera ya existe.", "info"); return; }
+  if (carreras.some(c => norm(c.nombre) === norm(nombre))) {
+    showToast("❗ Esa carrera ya existe.", "info"); return;
+  }
 
   try {
     const data = await fetchJson(API, {
@@ -127,33 +178,43 @@ document.querySelector(".guardar").addEventListener("click", async () => {
       body: JSON.stringify({ nombre })
     });
 
-    showToast(data.mensaje || "✅ Carrera guardada", "success");
+    showToast("✅ Guardado. Ahora puedes actualizar o eliminar.", "success");
 
-    // Optimista: agrega sin recargar o vuelve a pedir lista
-    if (data.id_Carrera) {
-      carreras.push({ id_Carrera: data.id_Carrera, nombre: data.nombre || nombre });
-      mostrarTabla();
+    // Añadir en memoria y re-render
+    const nuevo = { id_Carrera: data.id_Carrera, nombre: data.nombre || nombre };
+    carreras.push(nuevo);
+    mostrarTabla();
+
+    // Seleccionar automáticamente la nueva fila -> pasa a modo EDICIÓN
+    const filas = [...tabla.querySelectorAll("tr")];
+    const idx   = carreras.findIndex(x => x.id_Carrera === nuevo.id_Carrera);
+    if (idx !== -1) {
+      seleccionarFilaVisual(filas[idx]);
+      idSeleccionado = nuevo.id_Carrera;
+      nombreOriginal = nuevo.nombre;
+      inputNombre.value = nuevo.nombre;
     } else {
-      await cargarCarreras();
+      // fallback si no localiza la fila
+      idSeleccionado = nuevo.id_Carrera;
+      nombreOriginal = nuevo.nombre;
+      inputNombre.value = nuevo.nombre;
     }
-
-    inputNombre.value = "";
-    idSeleccionado = null;
+    updateButtonStates(); // en edición: Eliminar ON, Actualizar OFF (gris)
 
   } catch (err) {
     showToast(err.message, "error", 3200);
   }
 });
 
-// ========== Editar ==========
-document.querySelector(".actualizar").addEventListener("click", async () => {
-  if (!idSeleccionado) { showToast("Selecciona una carrera primero.", "info"); return; }
+/* ========== Actualizar ========== */
+btnActualizar.addEventListener("click", async () => {
+  if (idSeleccionado == null) { showToast("Selecciona una carrera primero.", "info"); return; }
   const nombre = (inputNombre.value || "").trim();
   if (!nombre) { showToast("Ingresa el nuevo nombre.", "info"); return; }
 
-  const norm = s => s.normalize("NFKC").trim().toLowerCase();
-  const yaExiste = carreras.some(c => c.id_Carrera !== idSeleccionado && norm(c.nombre) === norm(nombre));
-  if (yaExiste) { showToast("❗ Ya existe otra carrera con ese nombre.", "info"); return; }
+  if (carreras.some(c => c.id_Carrera !== idSeleccionado && norm(c.nombre) === norm(nombre))) {
+    showToast("❗ Ya existe otra carrera con ese nombre.", "info"); return;
+  }
 
   try {
     const data = await fetchJson(API, {
@@ -162,40 +223,49 @@ document.querySelector(".actualizar").addEventListener("click", async () => {
       body: JSON.stringify({ id_Carrera: idSeleccionado, nombre })
     });
 
-    showToast(data.mensaje || "✏️ Carrera actualizada", "success");
-
-    // actualizar en memoria sin recargar
+    // Actualiza memoria y UI
     const idx = carreras.findIndex(x => x.id_Carrera === idSeleccionado);
     if (idx !== -1) carreras[idx].nombre = nombre;
     mostrarTabla();
 
-    inputNombre.value = "";
-    idSeleccionado = null;
+    showToast("✏️ Actualizada. Volviendo a modo nuevo.", "success");
+
+    // “se quita y se pone todo gris”
+    limpiarSeleccion();
 
   } catch (err) {
     showToast(err.message, "error", 3200);
   }
 });
 
-// ========== Eliminar ==========
-document.querySelector(".eliminar").addEventListener("click", async () => {
-  if (!idSeleccionado) { showToast("Selecciona una carrera primero.", "info"); return; }
+/* ========== Eliminar (con bloqueo si hay cambios) ========== */
+btnEliminar.addEventListener("click", async () => {
+  if (idSeleccionado == null) { showToast("Selecciona una carrera primero.", "info"); return; }
 
-  const ok = await showConfirm("¿Seguro que deseas eliminar esta carrera?");
+  if (isDirty()) {
+    showToast("No puedes eliminar: estás editando esta carrera. Presiona ACTUALIZAR primero.", "warn", 3200);
+    return;
+  }
+
+  // Tomar nombre visible para el mensaje
+  const filaSel = [...tabla.querySelectorAll("tr")].find(tr => tr.classList.contains("seleccionada"));
+  const nombreSel = filaSel ? filaSel.textContent.trim() : "esta carrera";
+
+  const ok = await showConfirm(`Se borrará la carrera: "${nombreSel}".\n¿Estás seguro?`);
   if (!ok) return;
 
   try {
     const params = new URLSearchParams({ id_Carrera: String(idSeleccionado) });
     const data = await fetchJson(`${API}?${params.toString()}`, { method: "DELETE" });
 
-    showToast(data.mensaje || "🗑️ Carrera eliminada", "success");
-
-    // quitar de memoria y re-render
+    // Quitar de memoria y re-render
     carreras = carreras.filter(c => c.id_Carrera !== idSeleccionado);
     mostrarTabla();
 
-    inputNombre.value = "";
-    idSeleccionado = null;
+    showToast(data.mensaje || "🗑️ Carrera eliminada", "success");
+
+    // Volver a modo nuevo
+    limpiarSeleccion();
 
   } catch (err) {
     showToast(err.message || "No se pudo eliminar.", "error");

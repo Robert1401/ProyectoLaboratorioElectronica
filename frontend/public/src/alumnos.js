@@ -1,51 +1,128 @@
-// Ruta relativa desde frontend/public/src/alumnos.js hacia backend/Alumnos-Aux.php
-// Si tu estructura es la misma que usuarios.js, esta ruta funciona:
-const API_URL_ALUMNOS = "../../../../backend/Alumnos-Aux.php";
+// ====== alumnos-inicial.js (menú principal de alumnos) ======
+(function () {
+  // ------------------------------
+  // Rutas (ajústalas a tu estructura)
+  // ------------------------------
+  const ROUTES = {
+    solicitud:  "solicitud-materiales.html",
+    devolucion: "devolucion.html",
+    asesorias:  "asesorias.html",
+    home:       "../index.html"
+  };
 
-async function fetchJson(url) {
-  const res = await fetch(url);
-  const txt = await res.text();
-  console.log("GET", url, res.status, txt);
-  let data;
-  try { data = JSON.parse(txt); } catch { throw new Error("Respuesta no JSON"); }
-  if (!res.ok) throw new Error(data.error || "Error de red");
-  return data;
-}
+  // ------------------------------
+  // Claves de estado global (localStorage)
+  // ------------------------------
+  const ACTIVE_LOAN_KEY  = "LE_prestamo_activo";  // "1" o "0"
+  const ACTIVE_LOAN_DATA = "LE_prestamo_data";    // JSON con items, etc.
 
-function renderFilas(rows) {
-  const tbody = document.querySelector("#tablaAlumnos tbody");
-  tbody.innerHTML = "";
-  if (!Array.isArray(rows) || rows.length === 0) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="3" style="text-align:center; color:#7a0000;">Sin resultados</td>`;
-    tbody.appendChild(tr);
-    return;
+  // ------------------------------
+  // Helpers
+  // ------------------------------
+  const $  = (s) => document.querySelector(s);
+
+  const hasActiveLoan = () => localStorage.getItem(ACTIVE_LOAN_KEY) === "1";
+
+  function getLoanData() {
+    try { return JSON.parse(localStorage.getItem(ACTIVE_LOAN_DATA) || "{}"); }
+    catch { return {}; }
   }
 
-  rows.forEach(r => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${r.numeroControl ?? ""}</td>
-      <td>${r.carrera ?? ""}</td>
-      <td>${r.materia ?? ""}</td>
-    `;
-    tbody.appendChild(tr);
+  function setCardDisabled(card, disabled, reason = "") {
+    if (!card) return;
+    if (disabled) {
+      card.classList.add("disabled");
+      card.setAttribute("aria-disabled", "true");
+      card.dataset.disabled = "1";
+      if (reason) card.title = reason;
+    } else {
+      card.classList.remove("disabled");
+      card.removeAttribute("aria-disabled");
+      delete card.dataset.disabled;
+      card.removeAttribute("title");
+    }
+  }
+
+  // Coloca un “badge” con la cantidad total prestada en la tarjeta de devoluciones
+  function renderBadges() {
+    const loan = getLoanData();
+    const total = Array.isArray(loan?.items)
+      ? loan.items.reduce((acc, it) => acc + (parseInt(it.cantidad || 0, 10) || 0), 0)
+      : 0;
+
+    const header = document.querySelector('.card[data-action="devolucion"] .card-header');
+    if (!header) return;
+
+    // Limpia badge anterior
+    header.querySelector(".card-badge")?.remove();
+
+    if (total > 0) {
+      const badge = document.createElement("span");
+      badge.className = "card-badge";
+      badge.textContent = `${total} en uso`;
+      header.appendChild(badge);
+    }
+  }
+
+  // Aplica el estado inicial según si hay préstamo activo
+  function applyState() {
+    const cardSolicitud  = document.querySelector('.card[data-action="solicitud"]');
+    const cardDevolucion = document.querySelector('.card[data-action="devolucion"]');
+
+    if (hasActiveLoan()) {
+      setCardDisabled(cardSolicitud, true, "Tienes un préstamo activo. Devuélvelo para solicitar de nuevo.");
+      setCardDisabled(cardDevolucion, false);
+      renderBadges();
+    } else {
+      setCardDisabled(cardSolicitud, false);
+      setCardDisabled(cardDevolucion, true, "No tienes materiales por devolver.");
+      // Limpia badges
+      document.querySelectorAll(".card-badge").forEach(b => b.remove());
+    }
+  }
+
+  // ------------------------------
+  // Navegación por tarjetas
+  // ------------------------------
+  document.addEventListener("click", (e) => {
+    const card = e.target.closest(".card");
+    if (!card) return;
+
+    // No navegar si está deshabilitada
+    if (card.dataset.disabled === "1") {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
+    const action = card.dataset.action;
+    const destino = ROUTES[action];
+    if (!destino) return;
+
+    // Animación breve y navegación
+    card.style.transition = "transform .15s ease";
+    card.style.transform = "scale(0.97)";
+    setTimeout(() => {
+      card.style.transform = "scale(1)";
+      window.location.href = destino;
+    }, 140);
   });
-}
 
-async function cargarTabla(q = "") {
-  try {
-    const url = q ? `${API_URL_ALUMNOS}?q=${encodeURIComponent(q)}` : API_URL_ALUMNOS;
-    const data = await fetchJson(url);
-    renderFilas(data);
-  } catch (e) {
-    alert("❌ " + e.message);
-  }
-}
+  // ------------------------------
+  // Botón "Regresar"
+  // ------------------------------
+  $("#btnBack")?.addEventListener("click", () => {
+    if (history.length > 1) history.back();
+    else window.location.href = ROUTES.home;
+  });
 
-document.addEventListener("DOMContentLoaded", () => {
-  // Carga inicial sin filtro
-  cargarTabla();
-  // Si agregas un input de búsqueda, aquí puedes engancharlo:
-  // document.getElementById("buscar").addEventListener("keydown", e => { if(e.key==="Enter"){ cargarTabla(e.target.value.trim()) } });
-});
+  // ------------------------------
+  // Inicialización y reactividad al storage
+  // ------------------------------
+  document.addEventListener("DOMContentLoaded", applyState);
+
+  // Si otra pestaña/página cambia el estado, reflejarlo aquí
+  window.addEventListener("storage", (e) => {
+    if (e.key === ACTIVE_LOAN_KEY || e.key === ACTIVE_LOAN_DATA) applyState();
+  });
+})();

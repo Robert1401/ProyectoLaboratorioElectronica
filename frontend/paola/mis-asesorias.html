@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Asesorías</title>
+    <link rel="stylesheet" href="mis-asesorias-styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="content-card">
+            <!-- Header -->
+            <header class="header">
+                <img src="/placeholder.svg?height=60&width=80" alt="Logo TecNM" class="logo">
+                <div class="header-title-wrapper">
+                    <h1 class="header-title">MIS ASESORÍAS</h1>
+                    <div class="header-line"></div>
+                </div>
+                <img src="/placeholder.svg?height=60&width=80" alt="Logo Instituto" class="logo">
+            </header>
+
+            <!-- Asesorías Cards -->
+            <div id="asesoriasContainer" class="asesorias-container">
+                <!-- Cards will be dynamically loaded here -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <div class="empty-icon">📚</div>
+                <h2>No estás inscrito en ninguna asesoría</h2>
+                <p>Visita la página de asesorías disponibles para inscribirte en una.</p>
+                <a href="index.html" class="btn-browse">Ver Asesorías Disponibles</a>
+            </div>
+
+            <!-- Navigation -->
+            <div class="navigation">
+                <a href="index.html" class="nav-icon" title="Inicio">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="#5b0c0c">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22" fill="white"/>
+                    </svg>
+                </a>
+                <a href="index.html" class="nav-icon" title="Regresar">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#5b0c0c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load enrolled sessions from localStorage
+        function loadEnrolledSessions() {
+            const enrolledIds = JSON.parse(localStorage.getItem('enrolledSessions') || '[]');
+            const allSessions = JSON.parse(localStorage.getItem('asesorias') || '[]');
+            
+            const container = document.getElementById('asesoriasContainer');
+            const emptyState = document.getElementById('emptyState');
+            
+            // Filter sessions where user is enrolled
+            const enrolledSessions = allSessions.filter(session => 
+                enrolledIds.includes(session.id)
+            );
+            
+            if (enrolledSessions.length === 0) {
+                container.style.display = 'none';
+                emptyState.style.display = 'flex';
+                return;
+            }
+            
+            container.style.display = 'grid';
+            emptyState.style.display = 'none';
+            
+            // Render enrolled sessions
+            container.innerHTML = enrolledSessions.map(session => {
+                const cuposDisponibles = session.cupoTotal - session.cupoActual;
+                const cuposAgotados = cuposDisponibles <= 0;
+                
+                return `
+                    <div class="asesoria-card">
+                        <h2 class="card-title">${session.titulo}</h2>
+                        <div class="card-info">
+                            <p class="info-item">
+                                <span class="icon">👨‍🏫</span>
+                                <strong>Auxiliar:</strong> ${session.auxiliar}
+                            </p>
+                            <p class="info-item">
+                                <span class="icon">📝</span>
+                                <strong>Descripción:</strong> ${session.descripcion}
+                            </p>
+                            <p class="info-item">
+                                <span class="icon">📅</span>
+                                <strong>Fecha:</strong> ${session.fecha}
+                            </p>
+                            <p class="info-item">
+                                <span class="icon">🕐</span>
+                                <strong>Hora:</strong> ${session.hora}
+                            </p>
+                            <p class="info-item">
+                                <span class="icon">👥</span>
+                                <strong>Cupo:</strong> ${session.cupoActual}/${session.cupoTotal}
+                            </p>
+                            <div class="status-wrapper">
+                                <span class="status-badge status-inscrito">✓ Inscrito</span>
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-unenroll" onclick="unenrollFromSession('${session.id}')">
+                                ❌ Cancelar Inscripción
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Unenroll from a session
+        function unenrollFromSession(sessionId) {
+            if (!confirm('¿Estás seguro de que deseas cancelar tu inscripción?')) {
+                return;
+            }
+            
+            // Remove from enrolled sessions
+            let enrolledIds = JSON.parse(localStorage.getItem('enrolledSessions') || '[]');
+            enrolledIds = enrolledIds.filter(id => id !== sessionId);
+            localStorage.setItem('enrolledSessions', JSON.stringify(enrolledIds));
+            
+            // Decrease enrollment count
+            let allSessions = JSON.parse(localStorage.getItem('asesorias') || '[]');
+            const sessionIndex = allSessions.findIndex(s => s.id === sessionId);
+            if (sessionIndex !== -1 && allSessions[sessionIndex].cupoActual > 0) {
+                allSessions[sessionIndex].cupoActual--;
+                localStorage.setItem('asesorias', JSON.stringify(allSessions));
+            }
+            
+            alert('Tu inscripción ha sido cancelada exitosamente.');
+            loadEnrolledSessions();
+        }
+        
+        // Load sessions on page load
+        document.addEventListener('DOMContentLoaded', loadEnrolledSessions);
+    </script>
+</body>
+</html>

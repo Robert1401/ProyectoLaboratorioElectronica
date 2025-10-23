@@ -1,23 +1,11 @@
 // =========================
 // Config
 // =========================
-const API = "/backend/materias.php";   // Ajusta si tu ruta es otra
-const DEFAULT_CARRERA_ID = 11;         // Carrera por defecto (p.ej. 11 = Ing. Electrónica)
+const API = "/backend/materias.php";
+const DEFAULT_CARRERA_ID = 11;
 
-// =========================
-// Utilidades DOM y UI
 // =========================
 const qs  = (s, el=document) => el.querySelector(s);
-const qsa = (s, el=document) => [...el.querySelectorAll(s)];
-
-const toast = (msg)=>{
-  const el = qs('#toastCorner');
-  if(!el) return;
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(el._t);
-  el._t = setTimeout(()=> el.classList.remove('show'), 1800);
-};
 
 let __toastTimer=null;
 function showToast({title="",desc="",type="info",duration=2200}={}){
@@ -42,8 +30,8 @@ const toastError   = msg => showToast({title:"Ups",       desc:msg, type:"error"
 const toastInfo    = msg => showToast({title:"Aviso",     desc:msg, type:"info"});
 const toastWarn    = msg => showToast({title:"Atención",  desc:msg, type:"warn"});
 
-// ---- Confirm modal robusto (fix de “pantalla negra”) ----
-let __confirmBusy = false;
+// Confirm modal (si no existe en tu HTML, usa window.confirm)
+let __confirmBusy=false;
 function showConfirm(text="¿Seguro que deseas continuar?", opts={}){
   const overlay=document.getElementById("confirm");
   const titleEl=document.getElementById("confirm-title");
@@ -54,47 +42,33 @@ function showConfirm(text="¿Seguro que deseas continuar?", opts={}){
   if(!overlay||!titleEl||!textEl||!btnOK||!btnNo){
     return Promise.resolve(window.confirm(text));
   }
-
-  if (__confirmBusy) return Promise.resolve(false);
-  __confirmBusy = true;
+  if(__confirmBusy) return Promise.resolve(false);
+  __confirmBusy=true;
 
   titleEl.textContent=opts.title||"Confirmación";
   textEl.textContent =text;
-
-  // resetear animaciones antes de abrir
-  overlay.style.animation = "";
-  const card = overlay.querySelector(".confirm-card");
-  if (card) card.style.animation = "";
-
   overlay.hidden=false;
-
-  // forzar animaciones de entrada (evita quedarse con cardOut)
   requestAnimationFrame(()=>{
     overlay.style.animation="overlayIn .18s ease forwards";
-    if (card) card.style.animation="cardIn .18s ease forwards";
+    const card=overlay.querySelector(".confirm-card");
+    if(card) card.style.animation="cardIn .18s ease forwards";
   });
 
   return new Promise(resolve=>{
-    const cleanup = ()=>{
+    const cleanup=()=>{
       btnOK.removeEventListener("click",onOK);
       btnNo.removeEventListener("click",onNo);
       window.removeEventListener("keydown",onKey);
-      __confirmBusy = false;
+      __confirmBusy=false;
     };
     const close=v=>{
-      // animaciones de salida
-      if (card) card.style.animation="cardOut .14s ease forwards";
+      const card=overlay.querySelector(".confirm-card");
+      if(card) card.style.animation="cardOut .14s ease forwards";
       overlay.style.animation="overlayOut .14s ease forwards";
-      setTimeout(()=>{
-        overlay.hidden=true;
-        overlay.style.animation="";
-        if (card) card.style.animation=""; // importante: limpiar para el siguiente open
-        cleanup();
-        resolve(v);
-      },150);
+      setTimeout(()=>{overlay.hidden=true; cleanup(); resolve(v);},150);
     };
-    const onOK =()=>close(true);
-    const onNo =()=>close(false);
+    const onOK=()=>close(true);
+    const onNo=()=>close(false);
     const onKey=e=>{ if(e.key==="Escape") close(false); if(e.key==="Enter") close(true); };
     btnOK.addEventListener("click",onOK,{once:true});
     btnNo.addEventListener("click",onNo,{once:true});
@@ -102,27 +76,19 @@ function showConfirm(text="¿Seguro que deseas continuar?", opts={}){
   });
 }
 
-function normalizeName(s){
-  return (s||"")
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g,"")
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g," ");
-}
-
 async function fetchJson(url, options){
   const res = await fetch(url, options);
   let data = {};
   try { data = await res.json(); } catch {}
-  if (!res.ok || data.error) {
-    throw new Error(data.error || `Error (${res.status})`);
-  }
+  if (!res.ok || data.error) throw new Error(data.error || `Error (${res.status})`);
   return data;
 }
 
+// ========== normalizador para comparar nombres ==========
+const norm = s => (s||"").normalize("NFKC").trim().toLowerCase().replace(/\s+/g," ");
+
 // =========================
-// App: Materias (vinculada a BD)
+// App: Materias
 // =========================
 (function(){
   const input        = qs('#nombreMateria');
@@ -134,92 +100,128 @@ async function fetchJson(url, options){
 
   if(!input || !btnGuardar || !tbody) return;
 
-  // Estado
-  let materias = [];   // [{id_Materia, materia, id_Carrera, id_Estado, carrera}]
-  let filaSel  = null; // <tr> seleccionada
+  let materias = [];      // [{id_Materia, materia, id_Carrera, id_Estado, ...}]
+  let filaSel  = null;
+  let nombreOriginal = "";    // para detectar "dirty" en edición
+  let purgadaInactivas = false;
 
-  // ------- Helpers internos -------
-  function handleDupOrError(err, accion="operación"){
-    const msg = err?.message || "";
-    if (/ya existe/i.test(msg)) {
-      toastWarn("Esa materia ya existe en la carrera.");
-    } else {
-      toastError(msg || `No se pudo completar la ${accion}`);
+  // ======= ESTADOS DE BOTONES =======
+  function isDirty(){
+    if(!filaSel) return false;
+    return norm(input.value) !== norm(nombreOriginal);
+  }
+  function updateButtonStates(){
+    const hayTexto = (input.value||"").trim().length > 0;
+
+    if(!filaSel){
+      // Modo NUEVA
+      btnGuardar.disabled   = !hayTexto;
+      btnModificar.disabled = true;
+      btnEliminar.disabled  = true;
+      return;
     }
+    // Modo EDICIÓN
+    const changed = isDirty();
+    btnGuardar.disabled   = true;                 // no se guarda en edición
+    btnModificar.disabled = !hayTexto || !changed;
+    btnEliminar.disabled  = changed;              // bloquear eliminar si hay cambios
+    btnEliminar.title     = changed ? "Tienes cambios sin guardar. Actualiza primero." : "";
   }
 
+  // ======= Selección visual y lógica =======
   function marcarSeleccion(tr){
-    if(filaSel) filaSel.classList.remove("seleccion");
+    [...tbody.querySelectorAll("tr")].forEach(r=>r.classList.remove("seleccion"));
     filaSel = tr || null;
     if(filaSel) filaSel.classList.add("seleccion");
-    btnModificar.disabled = !filaSel;
-    btnEliminar.disabled  = !filaSel;
+    updateButtonStates();
+  }
+  function limpiarSeleccion(){
+    filaSel = null;
+    nombreOriginal = "";
+    input.value = "";
+    marcarSeleccion(null);
   }
 
-  // ------- Render -------
-  function render(){
+  // ======= Render con selección opcional =======
+  function render(selectId=null){
     tbody.innerHTML = '';
     if(!materias.length){
       if(tablaVacia) tablaVacia.hidden = false;
-      btnModificar.disabled = true;
-      btnEliminar.disabled  = true;
+      updateButtonStates();
       return;
     }
     if(tablaVacia) tablaVacia.hidden = true;
 
     materias.forEach(m=>{
       const tr = document.createElement('tr');
-
-      const activo = String(m.id_Estado) === "1";
       tr.dataset.id        = m.id_Materia;
       tr.dataset.idCarrera = m.id_Carrera;
-      tr.dataset.activo    = activo ? "1" : "0";
-
-      tr.classList.toggle("activa",   activo);
-      tr.classList.toggle("inactiva", !activo);
-
+      tr.dataset.estado    = m.id_Estado; // 1=activo, otros=inactivo
       tr.innerHTML = `<td>${m.materia}</td>`;
-
-      tr.addEventListener('click', onRowClick);
-      tr.addEventListener('dblclick', onRowDblClick);
+      tr.addEventListener('click', ()=>{
+        marcarSeleccion(tr);
+        input.value = m.materia;
+        nombreOriginal = m.materia;
+        updateButtonStates(); // en edición: Eliminar ON, Modificar OFF si no cambiaste
+      });
       tbody.appendChild(tr);
     });
-  }
 
-  function onRowClick(e){
-    const tr=e.currentTarget;
-    marcarSeleccion(tr);
-    input.value = tr.firstElementChild.textContent.trim();
-
-    // Si la fila es INACTIVA, ofrecer activarla
-    if(tr.dataset.activo==="0"){
-      const nombre = input.value;
-      showConfirm(
-        `La materia "${nombre}" está INACTIVA.\n¿Deseas ACTIVARLA ahora?`,
-        { title:'Reactivar materia' }
-      ).then(ok=> ok && toggleEstadoSeleccionado(true));
+    // Si nos pasan un id para seleccionar automáticamente (tras guardar)
+    if(selectId){
+      const tr = [...tbody.querySelectorAll("tr")].find(r=> String(r.dataset.id)===String(selectId));
+      if(tr){
+        tr.click(); // dispara la misma lógica de selección
+      }else{
+        updateButtonStates();
+      }
+    }else{
+      updateButtonStates();
     }
   }
 
-  function onRowDblClick(e){
-    const tr=e.currentTarget;
-    marcarSeleccion(tr);
-    toggleEstadoSeleccionado(); // alterna estado (con confirm interno)
-  }
-
-  // ------- Cargar de BD -------
-  async function cargarMaterias(){
+  async function cargarMaterias(selectId=null){
     try{
-      materias = await fetchJson(API); // GET lista
-      // Ordena por nombre usando locale ES y sin acentos
+      materias = await fetchJson(API); // GET
       materias.sort((a,b)=> a.materia.localeCompare(b.materia, 'es', {sensitivity:'base'}));
-      render();
+      render(selectId);
+
+      // Si existen inactivas, purgarlas automáticamente una sola vez
+      if (!purgadaInactivas && materias.some(m => String(m.id_Estado) !== "1")) {
+        purgadaInactivas = true;
+        try{
+          const r = await fetchJson(`${API}?inactive=1`, { method:"DELETE" });
+          if (r.eliminadas > 0) toastSuccess(`Eliminadas ${r.eliminadas} inactivas`);
+          // recargar tabla tras purga
+          materias = await fetchJson(API);
+          materias.sort((a,b)=> a.materia.localeCompare(b.materia, 'es', {sensitivity:'base'}));
+          render(selectId);
+        }catch(err){
+          console.error(err);
+          toastError(err.message || "No se pudieron eliminar las inactivas");
+        }
+      }
     }catch(err){
       toastError(err.message||"No se pudieron cargar materias");
     }
   }
 
-  // ------- Guardar -------
+  // ======= INPUT: habilitar Guardar o Modificar según modo =======
+  input.addEventListener('input', (e)=>{
+    // Sanitizar
+    const limpio = e.target.value.replace(/[^\p{L}\p{N}\s\-\.\(\)\/&#]/gu, '');
+    if(limpio !== e.target.value) e.target.value = limpio;
+    updateButtonStates();
+  });
+  input.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      if(!filaSel) btnGuardar.click();
+      else if(isDirty()) btnModificar.click();
+    }
+  });
+
+  // ======= Guardar =======
   btnGuardar.addEventListener("click", async ()=>{
     if(!input.checkValidity()){ input.reportValidity(); return; }
     const nombre = (input.value||"").trim();
@@ -231,22 +233,25 @@ async function fetchJson(url, options){
         method:"POST", headers:{ "Content-Type":"application/json" }, body
       });
 
-      toastSuccess(data.mensaje || "Materia guardada");
-      input.value="";
-      marcarSeleccion(null);
-      await cargarMaterias();
+      toastSuccess("Guardado. Ahora puedes actualizar o eliminar.");
+      // recargar y seleccionar automáticamente la nueva materia
+      const nuevoId = data.id_Materia;
+      await cargarMaterias(nuevoId); // esto hará click en la fila y quedará en edición
+      // en edición sin cambios -> Eliminar ON, Modificar OFF
     }catch(err){
-      handleDupOrError(err, "guardado");
+      const msg = err?.message || "";
+      if (/ya existe/i.test(msg)) showToast({type:"warn", title:"Atención", desc:"Esa materia ya existe en la carrera."});
+      else toastError(msg || "No se pudo guardar");
     }
   });
 
-  // ------- Modificar -------
+  // ======= Modificar =======
   btnModificar.addEventListener("click", async ()=>{
     if(!filaSel){ toastInfo("Selecciona una materia"); return; }
-    if(!input.value.trim()){ toastInfo("El nombre no puede estar vacío"); return; }
+    const nombre = (input.value||"").trim();
+    if(!nombre){ toastInfo("El nombre no puede estar vacío"); return; }
 
     const id_Materia = parseInt(filaSel.dataset.id, 10);
-    const nombre     = (input.value||"").trim();
     const id_Carrera = parseInt(filaSel.dataset.idCarrera||DEFAULT_CARRERA_ID, 10);
 
     try{
@@ -256,74 +261,47 @@ async function fetchJson(url, options){
       });
 
       toastSuccess(data.mensaje || "Materia actualizada");
-      input.value="";
-      marcarSeleccion(null);
+
+      // Recargar y volver a modo NUEVA (todo gris)
       await cargarMaterias();
+      limpiarSeleccion();
     }catch(err){
-      handleDupOrError(err, "actualización");
+      const msg = err?.message || "";
+      if (/ya existe/i.test(msg)) showToast({type:"warn", title:"Atención", desc:"Ese nombre ya existe en esa carrera."});
+      else toastError(msg || "No se pudo actualizar");
     }
   });
 
-  // ------- Eliminar (dar de baja / reactivar) -------
-  // Confirmación se hace DENTRO de toggleEstadoSeleccionado()
+  // ======= Eliminar (bloqueado si hay cambios) =======
   btnEliminar.addEventListener("click", async ()=>{
     if(!filaSel){ toastInfo("Selecciona una materia"); return; }
-    await toggleEstadoSeleccionado();
-  });
 
-  // ------- Alternar estado (con opción de forzar activar) -------
-  async function toggleEstadoSeleccionado(forceActivate=false){
-    if(!filaSel){ toastInfo("Selecciona una materia"); return; }
-    const id  = parseInt(filaSel.dataset.id,10);
-    const act = filaSel.dataset.activo==="1";
+    if(isDirty()){
+      toastWarn("No puedes eliminar: estás editando esta materia. Presiona ACTUALIZAR primero.");
+      return;
+    }
+
+    const id     = parseInt(filaSel.dataset.id,10);
     const nombre = (filaSel.firstElementChild?.textContent||"").trim();
 
-    // Confirm interno si no viene "forzar"
-    if(!forceActivate){
-      const msg   = act
-        ? `¿Deseas DAR DE BAJA la materia "${nombre}"?\nQuedará INACTIVA (aparecerá subrayada).`
-        : `La materia "${nombre}" está INACTIVA.\n¿Deseas ACTIVARLA ahora?`;
-      const title = act ? "Dar de baja" : "Activar";
-      const ok = await showConfirm(msg,{title});
-      if(!ok) return;
-    }
+    const ok = await showConfirm(
+      `Se borrará la materia: "${nombre}".\n¿Estás seguro?`,
+      { title:"Eliminar materia" }
+    );
+    if(!ok) return;
 
     try{
-      const set_activo = forceActivate ? 1 : (act ? 0 : 1);
+      const url = `${API}?id_Materia=${encodeURIComponent(id)}`;
+      const data = await fetchJson(url, { method:"DELETE" });
+      showToast({type:"success", title:"Hecho", desc: data.mensaje || `Materia "${nombre}" eliminada`});
 
-      // Actualiza visual AL INSTANTE
-      const nuevoActivo = String(set_activo);
-      const isActive    = (nuevoActivo === "1");
-      filaSel.dataset.activo = nuevoActivo;
-      filaSel.classList.toggle("activa",   isActive);
-      filaSel.classList.toggle("inactiva", !isActive);
-
-      // Persiste en servidor
-      const body = JSON.stringify({ id_Materia:id, set_activo });
-      const data = await fetchJson(API,{
-        method:"PUT", headers:{ "Content-Type":"application/json" }, body
-      });
-
-      toastSuccess(data.mensaje || (set_activo? "Materia activada" : "Materia inactivada"));
-
-      // Recarga desde BD para quedar 100% sincronizado
       await cargarMaterias();
+      limpiarSeleccion(); // volver a modo nueva (todo gris)
     }catch(err){
-      toastError(err.message||"No se pudo cambiar el estado");
-      await cargarMaterias(); // Revertir visual si falló
+      toastError(err.message||"No se pudo eliminar");
     }
-  }
-
-  // ------- Validación de caracteres y Enter=Guardar -------
-  // Permite letras (con acentos), números, espacios y - . ( ) / & #
-  input.addEventListener('input', (e)=>{
-    const limpio = e.target.value.replace(/[^\p{L}\p{N}\s\-\.\(\)\/&#]/gu, '');
-    if(limpio !== e.target.value) e.target.value = limpio;
-  });
-  input.addEventListener('keydown', (e)=>{
-    if(e.key === 'Enter'){ e.preventDefault(); btnGuardar.click(); }
   });
 
-  // Carga inicial
-  cargarMaterias();
+  // Carga inicial y estados
+  cargarMaterias().then(updateButtonStates);
 })();

@@ -128,6 +128,65 @@ if ($method === 'POST') {
   $data = json_decode($raw, true);
   if (!is_array($data)) fail(400,'JSON inválido');
 
+  /* --- fijar cantidad EXACTA de una línea (editar) --- */
+  if (($data['action'] ?? '') === 'set_item_qty') {
+    $idc = (int)($data['id_compra']   ?? 0);
+    $idm = (int)($data['id_Material'] ?? 0);
+    $new = (int)($data['nuevaCantidad'] ?? -1);
+    if ($idc<=0 || $idm<=0 || $new<0) fail(422,'Parámetros inválidos');
+
+    try {
+      $pdo->beginTransaction();
+
+      $st = $pdo->prepare(
+        "SELECT cantidad FROM MaterialesComprados
+         WHERE id_compra=? AND id_Material=? FOR UPDATE"
+      );
+      $st->execute([$idc,$idm]);
+      $row=$st->fetch();
+      if (!$row) { $pdo->rollBack(); fail(404,'Línea no encontrada'); }
+
+      $actual = (int)$row['cantidad'];
+      $delta  = $new - $actual;
+
+      if ($delta === 0) { $pdo->commit(); ok(['ok'=>true,'mensaje'=>'Sin cambios']); }
+
+      if ($new === 0) {
+        $pdo->prepare("DELETE FROM MaterialesComprados WHERE id_compra=? AND id_Material=?")
+            ->execute([$idc,$idm]);
+        $pdo->prepare("UPDATE Materiales SET cantidad = cantidad - ? WHERE id_Material=?")
+            ->execute([$actual,$idm]);
+
+        $chk = $pdo->prepare("SELECT 1 FROM MaterialesComprados WHERE id_compra=? LIMIT 1");
+        $chk->execute([$idc]);
+        if (!$chk->fetch()) $pdo->prepare("DELETE FROM Compras WHERE id_compra=?")->execute([$idc]);
+
+        $pdo->commit();
+        ok(['ok'=>true,'mensaje'=>'Línea eliminada y stock actualizado']);
+      }
+
+      if ($delta > 0) {
+        $pdo->prepare("UPDATE MaterialesComprados SET cantidad = cantidad + ? WHERE id_compra=? AND id_Material=?")
+            ->execute([$delta,$idc,$idm]);
+        $pdo->prepare("UPDATE Materiales SET cantidad = cantidad + ? WHERE id_Material=?")
+            ->execute([$delta,$idm]);
+      } else {
+        $abs = -$delta;
+        if ($abs > $actual) { $pdo->rollBack(); fail(422,'La reducción supera la cantidad actual'); }
+        $pdo->prepare("UPDATE MaterialesComprados SET cantidad = cantidad - ? WHERE id_compra=? AND id_Material=?")
+            ->execute([$abs,$idc,$idm]);
+        $pdo->prepare("UPDATE Materiales SET cantidad = cantidad - ? WHERE id_Material=?")
+            ->execute([$abs,$idm]);
+      }
+
+      $pdo->commit();
+      ok(['ok'=>true,'mensaje'=>'Cantidad actualizada']);
+    } catch (Throwable $e) {
+      if ($pdo->inTransaction()) $pdo->rollBack();
+      fail(500,'No se pudo actualizar la cantidad: '.$e->getMessage());
+    }
+  }
+
   /* --- eliminar total de la línea --- */
   if (($data['action'] ?? '') === 'delete_item') {
     $idc = (int)($data['id_compra']   ?? 0);
@@ -170,7 +229,6 @@ if ($method === 'POST') {
       if ($qty > $actual) { $pdo->rollBack(); fail(422,'Cantidad a eliminar mayor que la existente'); }
 
       if ($qty === $actual) {
-        // igual a delete_item
         $pdo->prepare("DELETE FROM MaterialesComprados WHERE id_compra=? AND id_Material=?")->execute([$idc,$idm]);
       } else {
         $pdo->prepare("UPDATE MaterialesComprados SET cantidad = cantidad - ? WHERE id_compra=? AND id_Material=?")
@@ -198,9 +256,7 @@ if ($method === 'POST') {
   if ($fecha==='')          fail(422,'Falta la fecha');
   if (!count($items))       fail(422,'Debe agregar al menos un material');
 
-  // auxiliar
   [$nc, $auxNombre] = resolve_auxiliar($pdo, $numeroControl);
-  // normalizar fecha
   $fechaDT = preg_match('/^\d{4}-\d{2}-\d{2}$/',$fecha) ? ($fecha.' 00:00:00') : $fecha;
 
   try {
