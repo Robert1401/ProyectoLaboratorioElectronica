@@ -3,45 +3,111 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Asesorías</title>
+  <title>Gestión de Asesorías</title>
+
+  <!-- CSS (mismo folder que este HTML) -->
   <link rel="stylesheet" href="asesorias.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
   <div class="container">
-    <header>
-      <img src="/frontend/public/assets/logo1.png" alt="Logo TecNM" class="logo">
-      <h1>Asesorías</h1>
-      <img src="/frontend/public/assets/escudo.png" alt="Logo IT" class="logo">
-    </header>
+    <div class="content-card">
+      <!-- Header -->
+      <header class="header">
+        <img src="../../assets/logo1.png" alt="Logo TecNM" class="logo">
+        <div class="header-title-wrapper">
+          <h1 class="header-title">GESTIÓN DE ASESORÍAS</h1>
+          <div class="header-line"></div>
+        </div>
+        <img src="../../assets/escudo.png" alt="Logo Instituto" class="logo">
+      </header>
 
-      <!-- Tabla -->
-      <div class="tabla">
-        <table id="tablaAsesorias">
-          <thead>
-            <tr>
-              <th>N° Control</th>
-              <th>Fecha del préstamo</th>
-              <th>Estatus</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>21450231</td><td>2025-09-22</td><td>Pendiente</td></tr>
-            <tr><td>21450232</td><td>2025-09-29</td><td>En curso</td></tr>
-            <tr><td>21450233</td><td>2025-10-05</td><td>Finalizada</td></tr>
-          </tbody>
-        </table>
+      <!-- Create Button -->
+      <div class="create-button-wrapper">
+        <button class="btn-create" onclick="openModal()">
+          <span class="plus-icon">+</span>
+          Crear nueva asesoría
+        </button>
       </div>
+
+      <!-- Asesorías Cards -->
+      <div id="asesoriasContainer" class="asesorias-container">
+        <!-- Cards generadas por JS -->
+      </div>
+
+      <!-- Navigation -->
+      <!-- Navigation -->
+<div class="navigation">
+  <a href="../auxiliar.html" class="nav-icon" title="Regresar">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#5b0c0c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 12H5M12 19l-7-7 7-7"/>
+    </svg>
+  </a>
+  <a href="../auxiliar.html" class="nav-icon" title="Inicio">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="#5b0c0c">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22" fill="white"/>
+    </svg>
+  </a>
+</div>
     </div>
-
-    <footer>
-      <div class="iconos">
-        <a href="#" class="icono"><i class="fa-solid fa-arrow-left"></i></a>
-        <a href="#" class="icono"><i class="fa-solid fa-house"></i></a>
-      </div>
-    </footer>
   </div>
 
-  <script src="/frontend/src/asesorias.js"></script>
+  <!-- Modal principal -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">Crear Nueva Asesoría</h2>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <form class="modal-form" onsubmit="saveAsesoria(event)">
+        <input type="hidden" id="asesoriaId">
+        <div class="form-group">
+          <label for="titulo">Título</label>
+          <input type="text" id="titulo" name="titulo" placeholder="Ej: Análisis de Circuitos" required>
+        </div>
+        <div class="form-group">
+          <label for="auxiliar">Auxiliar</label>
+          <input type="text" id="auxiliar" name="auxiliar" placeholder="Ej: Ing. María González" required>
+        </div>
+        <div class="form-group">
+          <label for="descripcion">Descripción</label>
+          <textarea id="descripcion" name="descripcion" rows="4" placeholder="Describe el contenido de la asesoría..." required></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fecha">Fecha</label>
+            <input type="date" id="fecha" name="fecha" required>
+          </div>
+          <div class="form-group">
+            <label for="hora">Hora</label>
+            <input type="text" id="hora" name="hora" placeholder="14:00 - 16:00" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="cupo">Cupo Total</label>
+          <input type="number" id="cupo" name="cupo" min="1" max="50" placeholder="Ej: 10" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" onclick="closeModal()">❌ Cancelar</button>
+          <button type="submit" class="btn-save">✅ Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal de alumnos -->
+  <div id="studentsModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="studentsModalTitle">Alumnos Inscritos</h2>
+        <button class="modal-close" onclick="closeStudentsModal()">&times;</button>
+      </div>
+      <div class="students-list" id="studentsList"></div>
+    </div>
+  </div>
+
+  <!-- JS externo (mismo patrón de rutas que tu segundo HTML) -->
+  <script src="../../src/asesorias.js"></script>
+   <script src="../../src/notify.js"></script>
 </body>
 </html>

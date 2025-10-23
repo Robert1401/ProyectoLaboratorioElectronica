@@ -1,78 +1,114 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Usuarios - Laboratorio</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Personas</title>
+
+  <!-- Iconos -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- Estilos -->
   <link rel="stylesheet" href="usuarios.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
   <div class="container">
-    <!-- ENCABEZADO -->
-    <header>
-      <img src="../../assets/logo1.png" alt="TecNM" class="logo">
-      <h1>Usuarios</h1>
-      <img src="../../assets/escudo.png" alt="Escudo" class="logo">
-    </header>
+    <main id="AreaTrabajo" aria-labelledby="titulo">
+      <!-- Encabezado -->
+      <header id="Encabezado">
+        <img src="../../assets/logo1.png" alt="Logo del Tecnológico Nacional de México" class="logo izq" />
+        <h1 id="titulo" class="titulo">Personas</h1>
+        <img src="../../assets/escudo.png" alt="Logo del Instituto Tecnológico de Saltillo" class="logo der" />
+        <div class="encabezado-line" aria-hidden="true"></div>
+      </header>
 
-    <!-- BUSCADOR -->
-   <div class="buscador">
-  <div class="search-box">
-    <i class="fas fa-search"></i>
-    <input type="text" id="buscar" placeholder="Buscar ">
-  </div>
-</div>
+      <!-- Formulario -->
+      <form id="Formulario" autocomplete="off" class="panel-form">
+        <section id="Registro" class="grid-form">
+          <div id="TipoRegistro" class="campo">
+            <label for="ComboTipoRegistro"><span>Tipo de registro</span></label>
+            <select id="ComboTipoRegistro" name="tipoRegistro">
+              <option value="ALL" selected>Usuarios (todos)</option>
+              <option value="1">Auxiliar</option>
+              <option value="2">Docente</option>
+              <option value="3">Alumno</option>
+            </select>
+          </div>
 
+          <div id="RegistroComun" class="campo">
+            <label for="numeroControl"><span>Número de control</span></label>
+            <input id="numeroControl" name="numeroControl" type="text"
+                   placeholder="Escribe..." maxlength="8" inputmode="numeric"
+                   pattern="^\d{4}$|^\d{8}$" title="Debe ser un número positivo de 8 o 4 cifras" required/>
 
-    <!-- FORMULARIO -->
-    <form class="formulario" id="formUsuarios">
-      <div class="columna">
-        <label>Nombre:</label>
-        <input type="text" id="nombre" required>
+            <label for="nombre"><span>Nombre</span></label>
+            <input id="nombre" name="nombre" type="text" placeholder="Escribe..."
+                   minlength="1" maxlength="50" pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$" title="Introduce solo letras" required/>
 
-        <label>Ap. Paterno:</label>
-        <input type="text" id="apPaterno" required>
+            <label for="paterno"><span>Apellido Paterno</span></label>
+            <input id="paterno" name="paterno" type="text" placeholder="Escribe..."
+                   minlength="1" maxlength="50" pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$" title="Introduce solo letras" required/>
 
-        <label>Ap. Materno:</label>
-        <input type="text" id="apMaterno" required>
+            <label for="materno"><span>Apellido Materno</span></label>
+            <input id="materno" name="materno" type="text" placeholder="Escribe..."
+                   minlength="1" maxlength="50" pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$" title="Introduce solo letras" required/>
+          </div>
 
-        <label>N. Control:</label>
-        <input type="text" id="numControl" required>
+          <div id="RegistroAlumnos" class="campo">
+            <label for="comboCarreras" id="spanCarreras" class="Carreras"><span>Carrera</span></label>
+            <select id="comboCarreras" name="carrera" class="Carreras">
+              <option value="">Cargando...</option>
+            </select>
+          </div>
+        </section>
+
+        <!-- Botones -->
+        <section id="Botones" role="group" aria-label="Acciones" class="acciones">
+          <button id="Guardar" type="button" title="Guardar">
+            <i class="fa-solid fa-floppy-disk"></i> Guardar
+          </button>
+          <button id="Modificar" type="button" title="Actualizar">
+            <i class="fa-solid fa-rotate"></i> Actualizar
+          </button>
+          <button id="Eliminar" type="button" title="Eliminar">
+            <i class="fa-solid fa-trash"></i> Eliminar
+          </button>
+          <button id="CambiarClave" type="button" class="btn-sec" title="Cambiar contraseña">
+            <i class="fa-solid fa-key"></i> Contraseña
+          </button>
+
+          <div class="buscar" style="margin-left:auto">
+            <input id="buscar" type="text" placeholder="Buscar por número (Enter)"/>
+            <button type="button" class="btn-sec" onclick="filtrarTablaPorRol('ALL')">Quitar filtro</button>
+          </div>
+        </section>
+      </form>
+
+      <!-- Única tabla (sin título) -->
+      <div class="paneles">
+        <section class="panel" aria-label="Listado">
+          <div class="wrap-tabla wrap-maroon">
+            <table id="tablaFiltro" class="tabla-maroon">
+              <thead>
+                <tr>
+                  <th style="width:130px">Número</th>
+                  <th>Nombre</th>
+                  <th>Paterno</th>
+                  <th>Materno</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <p class="nota">* Se actualiza según “Tipo de registro” o la selección en la tabla.</p>
+        </section>
       </div>
+    </main>
 
-      <div class="columna">
-        <label>Rol:</label>
-        <select id="rol" required>
-          <option value="">Seleccione</option>
-          <option value="Auxiliar">Auxiliar</option>
-          <option value="Alumno">Alumno</option>
-          <option value="Administrador">Administrador</option>
-        </select>
+    <div id="messages-root" aria-live="assertive" aria-atomic="true"></div>
 
-        <label>Carrera:</label>
-        <select id="carrera" required>
-          <option value="">Seleccione</option>
-          <option value="ISC">Ingeniería en Sistemas</option>
-          <option value="II">Ingeniería Industrial</option>
-          <option value="IE">Ingeniería Electrónica</option>
-        </select>
-
-        <label>Usuario:</label>
-        <input type="text" id="usuario" required>
-
-        <label>Contraseña:</label>
-        <input type="password" id="contrasena" required>
-      </div>
-    </form>
-
-    <!-- BOTONES -->
-    <footer>
-      <button class="btn" id="guardar"><i class="fas fa-save"></i> Guardar</button>
-      <button class="btn" id="actualizar"><i class="fas fa-sync-alt"></i> Actualizar</button>
-      <button class="btn" id="eliminar"><i class="fas fa-trash"></i> Eliminar</button>
-      <button class="btn" id="ver"><i class="fas fa-users"></i> Ver todos los alumnos</button>
-
+    <!-- Navegación rápida -->
+   <footer>
       <div class="iconos">
          <a href="../auxiliar.html" class="icono"><i class="fa-solid fa-arrow-left"></i></a>
         <a href="../../Login/index.html" class="icono"><i class="fa-solid fa-house"></i></a>
@@ -80,6 +116,7 @@
     </footer>
   </div>
 
-  <script src="../../src/usuarios.js"></script>
+  <!-- Lógica -->
+  <script src="../../src/usuarios.js" defer></script>
 </body>
 </html>

@@ -1,109 +1,139 @@
 <?php
+// CORS + JSON
 header("Content-Type: application/json; charset=utf-8");
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 
 // Configuración de la base de datos
-$servername = "localhost";
+$servername = "127.0.0.1";
 $username = "root";
 $password = "root";
-$database = "laboratorio_electronica";
+$database = "Laboratorio_Electronica";
 
 // Conexión
-$conn = new mysqli($servername, $username, $password, $database);
-if ($conn->connect_error) {
-    echo json_encode(["success" => false, "message" => "❌ Error en la conexión a la base de datos"]);
-    exit;
+$mysqli = new mysqli($host, $user, $pass, $db);
+if ($mysqli->connect_error) {
+  echo json_encode(["success"=>false,"message"=>"❌ Error de conexión a BD"]); exit;
 }
 
-// Leer datos enviados
+// Solo POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+  echo json_encode(["success"=>false,"message"=>"Método no permitido"]); exit;
+}
+
+// Entrada JSON
 $input = json_decode(file_get_contents("php://input"), true);
+$numeroControl = trim($input['numeroControl'] ?? '');
+$passwordInput = $input['password'] ?? '';
 
-if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-    echo json_encode(["success" => false, "message" => "Método no permitido"]);
-    exit;
+if ($numeroControl === '' || $passwordInput === '') {
+  echo json_encode(["success"=>false,"message"=>"⚠️ Campos vacíos"]); exit;
 }
 
-$usuario = $conn->real_escape_string($input["usuario"] ?? "");
-$passwordInput = $input["password"] ?? "";
-
-if (empty($usuario) || empty($passwordInput)) {
-    echo json_encode(["success" => false, "message" => "⚠️ Campos vacíos"]);
-    exit;
+// Debe ser numérico y con 6 a 8 dígitos (el ajuste exacto por rol se hace después)
+// Debe ser numérico
+if (!preg_match('/^\d+$/', $numeroControl)) {
+  echo json_encode(["success"=>false,"message"=>"🔎 El número de control debe ser numérico."]); exit;
 }
 
-// Consultar usuario
-$stmt = $conn->prepare("SELECT * FROM Usuarios WHERE usuario = ?");
-$stmt->bind_param("s", $usuario);
+$len = strlen($numeroControl);
+
+// 1) Muy pocos dígitos (<4)
+if ($len < 4) {
+  echo json_encode(["success"=>false,"message"=>"🔎 Faltan dígitos."]); exit;
+}
+
+// 2) 5–7 dígitos → no válido para ningún rol (ni auxiliar ni alumno)
+if ($len >= 5 && $len <= 7) {
+  echo json_encode(["success"=>false,"message"=>"🔎 Debe tener 4 (auxiliar) o 8 (alumno) dígitos."]); exit;
+}
+
+// 3) Más de 8 dígitos
+if ($len > 8) {
+  echo json_encode(["success"=>false,"message"=>"🔎 Te pasaste de dígitos."]); exit;
+}
+
+
+
+/*
+  Esquema actual:
+  Usuarios(id_Estado, numeroControl PK(unique), Clave)
+  Personas(numeroControl PK, id_Rol, id_Estado, nombre, ...)
+  Roles(id_Rol, nombre)
+*/
+$sql = "
+  SELECT 
+    U.numeroControl,
+    U.Clave                 AS hash,
+    U.id_Estado             AS estadoUsuario,
+    P.nombre                AS nombrePersona,
+    P.id_Estado             AS estadoPersona,
+    R.nombre                AS nombreRol
+  FROM Usuarios U
+  INNER JOIN Personas P ON P.numeroControl = U.numeroControl
+  INNER JOIN Roles R    ON R.id_Rol       = P.id_Rol
+  WHERE U.numeroControl = ?
+  LIMIT 1
+";
+
+$stmt = $mysqli->prepare($sql);
+if (!$stmt) {
+  echo json_encode(["success"=>false,"message"=>"❌ Error en la preparación de la consulta"]); 
+  $mysqli->close(); exit;
+}
+
+$ncInt = (int)$numeroControl;
+$stmt->bind_param("i", $ncInt);
 $stmt->execute();
-$result = $stmt->get_result();
+$res = $stmt->get_result();
 
-if ($result->num_rows === 0) {
-    echo json_encode(["success" => false, "message" => "❌ Usuario no encontrado"]);
-    $stmt->close();
-    $conn->close();
-    exit;
+if ($res->num_rows === 0) {
+  echo json_encode(["success"=>false,"message"=>"❌ Número de control no encontrado"]);
+  $stmt->close(); $mysqli->close(); exit;
 }
 
-$row = $result->fetch_assoc();
-$hash = $row['clave']; // Hash de la base de datos
-
-// Determinar rol y verificar contraseña
-$rol = "";
-$nombre = "";
-$ok = false;
-
-if (!empty($row["numeroControl"])) {
-    // Alumno
-    $rol = "alumno";
-    $ok = password_verify($passwordInput, $hash);
-} elseif (!empty($row["numeroTrabajador"])) {
-    // Auxiliar
-    $rol = "auxiliar";
-    if (substr($hash, 0, 4) === '$2y$') {
-        // BCRYPT
-        $ok = password_verify($passwordInput, $hash);
-    } else {
-        // SHA-256 antiguo (solo si hay auxiliares antiguos con SHA-256)
-        $ok = hash('sha256', $passwordInput) === $hash;
-    }
-} else {
-    $rol = "desconocido";
-    $ok = password_verify($passwordInput, $hash);
-}
-
-if ($ok) {
-    // Obtener nombre según rol
-    if ($rol === "alumno") {
-        $stmt2 = $conn->prepare("SELECT nombre FROM Alumnos WHERE numeroControl = ?");
-        $stmt2->bind_param("i", $row["numeroControl"]);
-        $stmt2->execute();
-        $res2 = $stmt2->get_result();
-        $alumno = $res2->fetch_assoc();
-        $nombre = $alumno["nombre"];
-        $stmt2->close();
-    } elseif ($rol === "auxiliar") {
-        $stmt2 = $conn->prepare("SELECT nombre FROM Auxiliares WHERE numeroTrabajador = ?");
-        $stmt2->bind_param("i", $row["numeroTrabajador"]);
-        $stmt2->execute();
-        $res2 = $stmt2->get_result();
-        $auxiliar = $res2->fetch_assoc();
-        $nombre = $auxiliar["nombre"];
-        $stmt2->close();
-    } else {
-        $nombre = $usuario;
-    }
-
-    echo json_encode([
-        "success" => true,
-        "message" => "✅ Bienvenido " . $nombre,
-        "rol" => $rol
-    ]);
-} else {
-    echo json_encode(["success" => false, "message" => "❌ Contraseña incorrecta"]);
-}
-
+$row = $res->fetch_assoc();
 $stmt->close();
-$conn->close();
-?>
+
+$numeroControlStr = $numeroControl;              // conserva como string para medir longitud
+$len = strlen($numeroControlStr);
+
+// Rol tal cual viene y versión minúscula
+$rolBruto = trim($row['nombreRol'] ?? '');
+$rol = mb_strtolower($rolBruto, 'UTF-8');
+
+// Validación por rol real
+if ($rol === 'auxiliar' && $len !== 4) {
+  echo json_encode(["success"=>false,"message"=> ($len < 4 ? "🔎 Faltan dígitos." : "🔎 Te pasaste de dígitos.") ]);
+  $mysqli->close(); exit;
+}
+
+if ($rol === 'alumno' && $len !== 8) {
+  echo json_encode(["success"=>false,"message"=> ($len < 8 ? "🔎 Faltan dígitos." : "🔎 Te pasaste de dígitos.") ]);
+  $mysqli->close(); exit;
+}
+
+
+// Verifica contraseña
+$hash = $row['hash'] ?? '';
+if ($hash === '' || !password_verify($passwordInput, $hash)) {
+  echo json_encode(["success"=>false,"message"=>"❌ Credenciales incorrectas"]);
+  $mysqli->close(); exit;
+}
+
+// (Opcional) Bloqueo por estado
+if ((int)$row['estadoUsuario'] !== 1 || (int)$row['estadoPersona'] !== 1) {
+  echo json_encode(["success"=>false,"message"=>"⛔ Usuario inactivo."]); $mysqli->close(); exit;
+}
+
+echo json_encode([
+  "success"       => true,
+  "message"       => "✅ Bienvenido ".$row['nombrePersona'],
+  "rol"           => $rol,
+  "rolNombreFull" => $rolBruto,
+  "nombre"        => $row['nombrePersona'],
+  "numeroControl" => (int)$row['numeroControl'],
+]);
+
+$mysqli->close();

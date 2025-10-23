@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asesorías Disponibles</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="content-card">
+            <!-- Header -->
+            <header class="header">
+                <img src="/placeholder.svg?height=60&width=80" alt="Logo TecNM" class="logo">
+                <div class="header-title-wrapper">
+                    <h1 class="header-title">ASESORÍAS DISPONIBLES</h1>
+                    <div class="header-line"></div>
+                </div>
+                <img src="/placeholder.svg?height=60&width=80" alt="Logo Instituto" class="logo">
+            </header>
+
+            <!-- Added button to view enrolled sessions -->
+            <div class="action-buttons">
+                <a href="mis-asesorias.html" class="btn-my-sessions">
+                    📚 Mis Asesorías
+                </a>
+            </div>
+
+            <!-- Asesorías Cards -->
+            <div id="asesoriasContainer" class="asesorias-container">
+                <!-- Cards will be dynamically loaded here -->
+            </div>
+
+            <!-- Navigation -->
+            <div class="navigation">
+                <a href="#" class="nav-icon" title="Inicio">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="#5b0c0c">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22" fill="white"/>
+                    </svg>
+                </a>
+                <a href="#" class="nav-icon" title="Regresar">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#5b0c0c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function initializeDefaultSessions() {
+            const existingSessions = localStorage.getItem('asesorias');
+            if (!existingSessions) {
+                const defaultSessions = [
+                    {
+                        id: '1',
+                        titulo: 'Análisis de Circuitos con SPICE',
+                        auxiliar: 'Ing. María González',
+                        descripcion: 'Aprende a simular circuitos eléctricos usando SPICE. Ideal para análisis de circuitos AC/DC.',
+                        fecha: '2024-01-15',
+                        hora: '14:00 - 16:00',
+                        cupoActual: 5,
+                        cupoTotal: 8
+                    },
+                    {
+                        id: '2',
+                        titulo: 'Programación en Python Avanzado',
+                        auxiliar: 'Ing. Carlos Ramírez',
+                        descripcion: 'Profundiza en estructuras de datos, algoritmos y programación orientada a objetos en Python.',
+                        fecha: '2024-01-16',
+                        hora: '10:00 - 12:00',
+                        cupoActual: 3,
+                        cupoTotal: 10
+                    },
+                    {
+                        id: '3',
+                        titulo: 'Diseño de PCB con KiCad',
+                        auxiliar: 'Ing. Ana López',
+                        descripcion: 'Diseña placas de circuito impreso profesionales desde cero usando KiCad.',
+                        fecha: '2024-01-17',
+                        hora: '16:00 - 18:00',
+                        cupoActual: 6,
+                        cupoTotal: 6
+                    },
+                    {
+                        id: '4',
+                        titulo: 'Microcontroladores Arduino',
+                        auxiliar: 'Ing. Roberto Sánchez',
+                        descripcion: 'Introducción práctica a la programación de Arduino y proyectos de electrónica.',
+                        fecha: '2024-01-18',
+                        hora: '15:00 - 17:00',
+                        cupoActual: 8,
+                        cupoTotal: 12
+                    },
+                    {
+                        id: '5',
+                        titulo: 'Matemáticas para Ingeniería',
+                        auxiliar: 'M.C. Laura Fernández',
+                        descripcion: 'Refuerza conceptos de cálculo diferencial e integral aplicados a la ingeniería.',
+                        fecha: '2024-01-19',
+                        hora: '09:00 - 11:00',
+                        cupoActual: 2,
+                        cupoTotal: 15
+                    }
+                ];
+                localStorage.setItem('asesorias', JSON.stringify(defaultSessions));
+            }
+        }
+
+        function loadSessions() {
+            initializeDefaultSessions();
+            const sessions = JSON.parse(localStorage.getItem('asesorias') || '[]');
+            const enrolledIds = JSON.parse(localStorage.getItem('enrolledSessions') || '[]');
+            const container = document.getElementById('asesoriasContainer');
+            
+            container.innerHTML = sessions.map(session => {
+                const cuposDisponibles = session.cupoTotal - session.cupoActual;
+                const cuposAgotados = cuposDisponibles <= 0;
+                const isEnrolled = enrolledIds.includes(session.id);
+                
+                return `
+                    <div class="asesoria-card">
+                        <h2 class="card-title">${session.titulo}</h2>
+                        <div class="card-info">
+                            <p class="info-item">
+                                <span class="icon">👨‍🏫</span>
+                                <strong>Auxiliar:</strong> ${session.auxiliar}
+                            </p>
+                            <p class="info-item">
+                                <span class="icon">📝</span>
+                                <strong>Descripción:</strong> ${session.descripcion}
+                            </p>
+                            <p class="info-item">
+                                <span class="icon">📅</span>
+                                <strong>Fecha:</strong> ${session.fecha}
+                            </p>
+                            <p class="info-item">
+                                <span class="icon">🕐</span>
+                                <strong>Hora:</strong> ${session.hora}
+                            </p>
+                            <p class="info-item">
+                                <span class="icon">👥</span>
+                                <strong>Cupos disponibles:</strong> 
+                                <span class="cupos-count ${cuposAgotados ? 'cupos-agotados' : ''}">${session.cupoActual}/${session.cupoTotal}</span>
+                            </p>
+                        </div>
+                        <div class="card-actions">
+                            ${isEnrolled 
+                                ? '<button class="btn-inscribirse btn-enrolled" disabled>✓ Ya Inscrito</button>'
+                                : cuposAgotados 
+                                    ? '<button class="btn-inscribirse btn-disabled" disabled>Cupos Agotados</button>'
+                                    : `<button class="btn-inscribirse" onclick="inscribirse('${session.id}')">Inscribirse</button>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function inscribirse(sessionId) {
+            let sessions = JSON.parse(localStorage.getItem('asesorias') || '[]');
+            let enrolledIds = JSON.parse(localStorage.getItem('enrolledSessions') || '[]');
+            
+            // Check if already enrolled
+            if (enrolledIds.includes(sessionId)) {
+                alert('Ya estás inscrito en esta asesoría.');
+                return;
+            }
+            
+            // Find the session and update enrollment count
+            const sessionIndex = sessions.findIndex(s => s.id === sessionId);
+            if (sessionIndex !== -1) {
+                const session = sessions[sessionIndex];
+                
+                // Check if there are available spots
+                if (session.cupoActual >= session.cupoTotal) {
+                    alert('Lo sentimos, los cupos están agotados.');
+                    return;
+                }
+                
+                // Increment enrollment count
+                sessions[sessionIndex].cupoActual++;
+                
+                // Add to enrolled sessions
+                enrolledIds.push(sessionId);
+                
+                // Save to localStorage
+                localStorage.setItem('asesorias', JSON.stringify(sessions));
+                localStorage.setItem('enrolledSessions', JSON.stringify(enrolledIds));
+                
+                alert('¡Te has inscrito exitosamente!');
+                loadSessions(); // Reload to update UI
+            }
+        }
+
+        // Load sessions on page load
+        document.addEventListener('DOMContentLoaded', loadSessions);
+    </script>
+</body>
+</html>

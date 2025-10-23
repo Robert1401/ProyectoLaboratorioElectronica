@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Asesorías</title>
+    <link rel="stylesheet" href="gestion-styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="content-card">
+            <!-- Header -->
+            <header class="header">
+                <img src="/placeholder.svg?height=60&width=80" alt="Logo TecNM" class="logo">
+                <div class="header-title-wrapper">
+                    <h1 class="header-title">GESTIÓN DE ASESORÍAS</h1>
+                    <div class="header-line"></div>
+                </div>
+                <img src="/placeholder.svg?height=60&width=80" alt="Logo Instituto" class="logo">
+            </header>
+
+            <!-- Create Button -->
+            <div class="create-button-wrapper">
+                <button class="btn-create" onclick="openModal()">
+                    <span class="plus-icon">+</span>
+                    Crear nueva asesoría
+                </button>
+            </div>
+
+            <!-- Asesorías Cards -->
+            <div id="asesoriasContainer" class="asesorias-container">
+                <!-- Cards will be dynamically loaded here -->
+            </div>
+
+            <!-- Navigation -->
+            <div class="navigation">
+                <a href="index.html" class="nav-icon" title="Inicio">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="#5b0c0c">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22" fill="white"/>
+                    </svg>
+                </a>
+                <a href="index.html" class="nav-icon" title="Regresar">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#5b0c0c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Crear Nueva Asesoría</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <form class="modal-form" onsubmit="saveAsesoria(event)">
+                <input type="hidden" id="asesoriaId">
+                <div class="form-group">
+                    <label for="titulo">Título</label>
+                    <input type="text" id="titulo" name="titulo" placeholder="Ej: Análisis de Circuitos" required>
+                </div>
+                <div class="form-group">
+                    <label for="auxiliar">Auxiliar</label>
+                    <input type="text" id="auxiliar" name="auxiliar" placeholder="Ej: Ing. María González" required>
+                </div>
+                <div class="form-group">
+                    <label for="descripcion">Descripción</label>
+                    <textarea id="descripcion" name="descripcion" rows="4" placeholder="Describe el contenido de la asesoría..." required></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fecha">Fecha</label>
+                        <input type="date" id="fecha" name="fecha" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="hora">Hora</label>
+                        <input type="text" id="hora" name="hora" placeholder="14:00 - 16:00" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="cupo">Cupo Total</label>
+                    <input type="number" id="cupo" name="cupo" min="1" max="50" placeholder="Ej: 10" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal()">❌ Cancelar</button>
+                    <button type="submit" class="btn-save">✅ Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Students Modal -->
+    <div id="studentsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="studentsModalTitle">Alumnos Inscritos</h2>
+                <button class="modal-close" onclick="closeStudentsModal()">&times;</button>
+            </div>
+            <div class="students-list" id="studentsList">
+                <!-- Students will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function initializeDefaultSessions() {
+            const existingSessions = localStorage.getItem('asesorias');
+            if (!existingSessions) {
+                const defaultSessions = [
+                    {
+                        id: '1',
+                        titulo: 'Análisis de Circuitos con SPICE',
+                        auxiliar: 'Ing. María González',
+                        descripcion: 'Aprende a simular circuitos eléctricos usando SPICE. Ideal para análisis de circuitos AC/DC.',
+                        fecha: '2024-01-15',
+                        hora: '14:00 - 16:00',
+                        cupoActual: 5,
+                        cupoTotal: 8,
+                        status: 'En curso'
+                    },
+                    {
+                        id: '2',
+                        titulo: 'Programación en Python Avanzado',
+                        auxiliar: 'Ing. Carlos Ramírez',
+                        descripcion: 'Profundiza en estructuras de datos, algoritmos y programación orientada a objetos en Python.',
+                        fecha: '2024-01-16',
+                        hora: '10:00 - 12:00',
+                        cupoActual: 3,
+                        cupoTotal: 10,
+                        status: 'Pendiente'
+                    },
+                    {
+                        id: '3',
+                        titulo: 'Bases de Datos Relacionales',
+                        auxiliar: 'Ing. Ana Martínez',
+                        descripcion: 'Diseño y normalización de bases de datos. Consultas SQL avanzadas y optimización.',
+                        fecha: '2024-01-10',
+                        hora: '16:00 - 18:00',
+                        cupoActual: 12,
+                        cupoTotal: 12,
+                        status: 'Finalizada'
+                    },
+                    {
+                        id: '4',
+                        titulo: 'Desarrollo Web con React',
+                        auxiliar: 'Ing. Luis Hernández',
+                        descripcion: 'Componentes, hooks, estado y props. Construcción de aplicaciones web modernas con React.',
+                        fecha: '2024-01-18',
+                        hora: '15:00 - 17:00',
+                        cupoActual: 7,
+                        cupoTotal: 15,
+                        status: 'Pendiente'
+                    }
+                ];
+                localStorage.setItem('asesorias', JSON.stringify(defaultSessions));
+            }
+        }
+
+        function loadSessions() {
+            initializeDefaultSessions();
+            const sessions = JSON.parse(localStorage.getItem('asesorias') || '[]');
+            const container = document.getElementById('asesoriasContainer');
+            
+            container.innerHTML = sessions.map(session => {
+                const statusClass = session.status === 'En curso' ? 'status-en-curso' 
+                    : session.status === 'Finalizada' ? 'status-finalizada' 
+                    : 'status-pendiente';
+                
+                return `
+                    <div class="asesoria-card" data-id="${session.id}">
+                        <h2 class="card-title">${session.titulo}</h2>
+                        <div class="card-info">
+                            <p class="info-item">
+                                <span class="icon">👨‍🏫</span>
+                                <strong>Auxiliar:</strong> ${session.auxiliar}
+                            </p>
+                            <p class="info-item">
+                                <span class="icon">📝</span>
+                                <strong>Descripción:</strong> ${session.descripcion}
+                            </p>
+                            <p class="info-item">
+                                <span class="icon">📅</span>
+                                <strong>Fecha:</strong> ${session.fecha}
+                            </p>
+                            <p class="info-item">
+                                <span class="icon">🕐</span>
+                                <strong>Hora:</strong> ${session.hora}
+                            </p>
+                            <p class="info-item">
+                                <span class="icon">👥</span>
+                                <strong>Cupo:</strong> ${session.cupoActual}/${session.cupoTotal}
+                            </p>
+                            <div class="status-wrapper">
+                                <span class="status-badge ${statusClass}">${session.status}</span>
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-edit" onclick="openEditModal('${session.id}')">✏️ Editar</button>
+                            <button class="btn-view" onclick="openStudentsModal('${session.titulo}', '${session.id}')">👁️ Ver inscritos</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openModal() {
+            document.getElementById('modalTitle').textContent = 'Crear Nueva Asesoría';
+            document.getElementById('asesoriaId').value = '';
+            document.getElementById('titulo').value = '';
+            document.getElementById('auxiliar').value = '';
+            document.getElementById('descripcion').value = '';
+            document.getElementById('fecha').value = '';
+            document.getElementById('hora').value = '';
+            document.getElementById('cupo').value = '';
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function openEditModal(asesoriaId) {
+            const sessions = JSON.parse(localStorage.getItem('asesorias') || '[]');
+            const asesoria = sessions.find(s => s.id === asesoriaId);
+            if (!asesoria) return;
+            
+            document.getElementById('modalTitle').textContent = 'Editar Asesoría';
+            document.getElementById('asesoriaId').value = asesoria.id;
+            document.getElementById('titulo').value = asesoria.titulo;
+            document.getElementById('auxiliar').value = asesoria.auxiliar;
+            document.getElementById('descripcion').value = asesoria.descripcion;
+            document.getElementById('fecha').value = asesoria.fecha;
+            document.getElementById('hora').value = asesoria.hora;
+            document.getElementById('cupo').value = asesoria.cupoTotal;
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        function saveAsesoria(event) {
+            event.preventDefault();
+            
+            const id = document.getElementById('asesoriaId').value;
+            const titulo = document.getElementById('titulo').value;
+            const auxiliar = document.getElementById('auxiliar').value;
+            const descripcion = document.getElementById('descripcion').value;
+            const fecha = document.getElementById('fecha').value;
+            const hora = document.getElementById('hora').value;
+            const cupoTotal = parseInt(document.getElementById('cupo').value);
+            
+            let sessions = JSON.parse(localStorage.getItem('asesorias') || '[]');
+            
+            if (id) {
+                // Edit existing session
+                const index = sessions.findIndex(s => s.id === id);
+                if (index !== -1) {
+                    sessions[index] = {
+                        ...sessions[index],
+                        titulo,
+                        auxiliar,
+                        descripcion,
+                        fecha,
+                        hora,
+                        cupoTotal
+                    };
+                }
+            } else {
+                // Create new session
+                const newSession = {
+                    id: Date.now().toString(),
+                    titulo,
+                    auxiliar,
+                    descripcion,
+                    fecha,
+                    hora,
+                    cupoActual: 0,
+                    cupoTotal,
+                    status: 'Pendiente'
+                };
+                sessions.push(newSession);
+            }
+            
+            localStorage.setItem('asesorias', JSON.stringify(sessions));
+            alert('Asesoría guardada exitosamente');
+            closeModal();
+            loadSessions();
+        }
+
+        function openStudentsModal(asesoriaTitle, asesoriaId) {
+            const modal = document.getElementById('studentsModal');
+            const title = document.getElementById('studentsModalTitle');
+            const list = document.getElementById('studentsList');
+            
+            title.textContent = `Alumnos Inscritos - ${asesoriaTitle}`;
+            
+            // Mock student data
+            const mockStudents = [
+                { numeroControl: "20400751", nombre: "Juan Carlos Pérez García" },
+                { numeroControl: "20400752", nombre: "María Fernanda López Martínez" },
+                { numeroControl: "20400753", nombre: "Luis Alberto Rodríguez Sánchez" }
+            ];
+            
+            if (mockStudents.length === 0) {
+                list.innerHTML = '<p class="no-students">No hay alumnos inscritos aún.</p>';
+            } else {
+                list.innerHTML = mockStudents.map((student, index) => `
+                    <div class="student-item">
+                        <span class="student-number">${index + 1}</span>
+                        <div class="student-info">
+                            <p class="student-control"><strong>N. Control:</strong> ${student.numeroControl}</p>
+                            <p class="student-name"><strong>Nombre:</strong> ${student.nombre}</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeStudentsModal() {
+            document.getElementById('studentsModal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal');
+            const studentsModal = document.getElementById('studentsModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+            if (event.target === studentsModal) {
+                closeStudentsModal();
+            }
+        }
+
+        // Load sessions on page load
+        document.addEventListener('DOMContentLoaded', loadSessions);
+    </script>
+</body>
+</html>
