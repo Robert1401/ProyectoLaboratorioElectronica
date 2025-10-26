@@ -1,189 +1,520 @@
-/* === FONDO GENERAL === */
-body {
-  font-family: 'Segoe UI', sans-serif;
-  background: radial-gradient(circle at center, #8b0000 10%, #2b0000 80%);
-  color: #4b0000;
+* {
   margin: 0;
-  height: 100vh;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #5b0c0c;
+  min-height: 100vh;
+  padding: 20px;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-/* === CONTENEDOR PRINCIPAL === */
 .container {
-  background: #ffffff;
-  width: 85%;
-  max-width: 950px;
-  min-height: 550px;
-  border-radius: 25px;
-  box-shadow: 0 0 35px rgba(0, 0, 0, 0.45);
-  padding: 30px 40px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  animation: fadeIn 0.7s ease-in-out;
-  transition: 0.3s ease;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-.container:hover {
-  transform: scale(1.02);
-  box-shadow: 0 0 45px rgba(255, 180, 180, 0.6);
+.content-card {
+  background-color: white;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  min-height: 600px;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(25px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* === ENCABEZADO === */
-header {
+/* Header */
+.header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 3px solid #7a0000;
-  padding-bottom: 8px;
-}
-
-header h1 {
-  font-size: 2em;
-  color: #7a0000;
-  text-shadow: 1px 1px 2px #ffdddd;
+  margin-bottom: 40px;
+  gap: 20px;
 }
 
 .logo {
   width: 80px;
-  height: auto;
+  height: 60px;
+  object-fit: contain;
 }
 
-/* === FILA === */
-.fila {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 40px;
-  width: 100%;
-  margin-top: 30px;
-}
-
-/* === FORMULARIO === */
-.formulario {
+.header-title-wrapper {
   flex: 1;
-  background: #e2e2e2;
-  padding: 25px;
-  border-radius: 18px;
-  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.25);
-}
-
-.formulario label {
-  display: block;
-  font-weight: bold;
-  margin-bottom: 8px;
-  font-size: 1.1em;
-  color: #7a0000;
-}
-
-.formulario input,
-.formulario select {
-  width: 100%;
-  padding: 12px;
-  border: 2px solid #a00000;
-  border-radius: 10px;
-  font-size: 1em;
-  background-color: #fff;
-  color: #4b0000;
-  margin-bottom: 18px;
-  transition: 0.3s;
-}
-
-.formulario input:focus,
-.formulario select:focus {
-  outline: none;
-  border-color: #cc0000;
-  box-shadow: 0 0 10px rgba(160, 0, 0, 0.4);
-}
-
-/* === TABLA === */
-.tabla {
-  flex: 1;
-  background: #fffdfd;
-  padding: 25px;
-  border-radius: 18px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  animation: slideUp 0.9s ease;
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(15px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #fffafc;
-  box-shadow: 0 3px 10px rgba(120, 0, 0, 0.1);
-}
-
-th {
-  background: linear-gradient(to right, #b30000, #7a0000);
-  color: #fff;
-  font-weight: bold;
-  padding: 14px;
-  font-size: 1.05em;
-}
-
-td {
-  border-bottom: 1px solid #d6bcbc;
-  padding: 12px;
   text-align: center;
-  color: #5a0000;
 }
 
-tr:hover td {
-  background: #ffe8e8;
+.header-title {
+  font-size: 2rem;
+  color: #5b0c0c;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
 }
 
-/* === BOTONES === */
-.btn {
-  background: linear-gradient(to right, #b30000, #7a0000);
+.header-line {
+  width: 100%;
+  height: 3px;
+  background-color: #5b0c0c;
+  margin: 0 auto;
+}
+
+/* Create Button */
+.create-button-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 30px;
+}
+
+.btn-create {
+  background-color: #5b0c0c;
   color: white;
   border: none;
-  padding: 12px 28px;
-  border-radius: 35px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  font-weight: bold;
-  font-size: 1em;
-  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.3);
-  transition: 0.3s ease;
   display: flex;
   align-items: center;
   gap: 8px;
-  justify-content: center;
-  width: 100%;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
-.btn:hover {
-  transform: translateY(-3px) scale(1.05);
-  background: linear-gradient(to right, #d00000, #8b0000);
-  box-shadow: 0 8px 20px rgba(122,0,0,0.6);
+.btn-create:hover {
+  background-color: #450909;
+  transform: translateY(-2px);
 }
 
+<<<<<<< HEAD
 /* === RESPONSIVO === */
 @media (max-width: 900px) {
   .fila {
+=======
+.plus-icon {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+/* Asesorías Container */
+.asesorias-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+/* Card */
+.asesoria-card {
+  background-color: white;
+  border: 2px solid #5b0c0c;
+  border-radius: 12px;
+  padding: 24px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.asesoria-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(91, 12, 12, 0.2);
+}
+
+.card-title {
+  color: #5b0c0c;
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  line-height: 1.3;
+}
+
+.card-info {
+  margin-bottom: 20px;
+}
+
+.info-item {
+  color: #333;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.info-item strong {
+  color: #5b0c0c;
+}
+
+/* Status Badge */
+.status-wrapper {
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-pendiente {
+  background-color: #ffc107;
+  color: #000;
+}
+
+.status-en-curso {
+  background-color: #4caf50;
+  color: white;
+}
+
+.status-finalizada {
+  background-color: #607d8b;
+  color: white;
+}
+
+/* Card Actions */
+.card-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-edit,
+.btn-view {
+  flex: 1;
+  min-width: 120px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-edit {
+  background-color: #5b0c0c;
+  color: white;
+}
+
+.btn-edit:hover {
+  background-color: #450909;
+  transform: translateY(-2px);
+}
+
+.btn-view {
+  background-color: #f5f5f5;
+  color: #5b0c0c;
+  border: 2px solid #5b0c0c;
+}
+
+.btn-view:hover {
+  background-color: #e0e0e0;
+  transform: translateY(-2px);
+}
+
+/* Navigation */
+/* ===============================
+   Navegación (flecha + casita)
+=============================== */
+.navigation {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: 24px;
+  padding-right: 20px;
+}
+
+.nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.nav-icon svg {
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  transition: fill 0.2s ease, stroke 0.2s ease;
+}
+
+/* Efecto hover guinda brillante */
+.nav-icon:hover svg {
+  fill: #b30000;
+  stroke: #b30000;
+  transform: scale(1.08);
+  filter: drop-shadow(0 0 3px rgba(179, 0, 0, 0.6));
+}
+
+
+/* Modal */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.modal-header h2 {
+  color: #5b0c0c;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #999;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.modal-close:hover {
+  color: #5b0c0c;
+}
+
+.modal-form {
+  padding: 24px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  color: #5b0c0c;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #5b0c0c;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.btn-cancel,
+.btn-save {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-cancel {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.btn-cancel:hover {
+  background-color: #d0d0d0;
+}
+
+.btn-save {
+  background-color: #5b0c0c;
+  color: white;
+}
+
+.btn-save:hover {
+  background-color: #450909;
+}
+
+/* Students List */
+.students-list {
+  padding: 24px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.student-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border: 2px solid #f0f0f0;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+}
+
+.student-item:hover {
+  border-color: #5b0c0c;
+  background-color: #fafafa;
+}
+
+.student-number {
+  background-color: #5b0c0c;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.student-info {
+  flex: 1;
+}
+
+.student-control,
+.student-name {
+  color: #333;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.student-control strong,
+.student-name strong {
+  color: #5b0c0c;
+}
+
+.no-students {
+  text-align: center;
+  color: #999;
+  font-size: 1.1rem;
+  padding: 40px 20px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .content-card {
+    padding: 24px;
+  }
+
+  .header {
+>>>>>>> 5e57e57cd52febb9c0343cce623d814322ff019d
     flex-direction: column;
-    align-items: center;
+    text-align: center;
   }
 
-  .formulario, .tabla {
-    width: 90%;
+  .logo {
+    width: 60px;
+    height: 45px;
   }
 
-  header h1 {
-    font-size: 1.6em;
+  .header-title {
+    font-size: 1.5rem;
+  }
+
+  .create-button-wrapper {
+    justify-content: center;
+  }
+
+  .btn-create {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .asesorias-container {
+    grid-template-columns: 1fr;
+  }
+
+  .card-actions {
+    flex-direction: column;
+  }
+
+  .btn-edit,
+  .btn-view {
+    width: 100%;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .btn-cancel,
+  .btn-save {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-title {
+    font-size: 1.2rem;
+  }
+
+  .card-title {
+    font-size: 1.2rem;
+  }
+
+  .info-item {
+    font-size: 0.9rem;
   }
 }
 /* === BOTÓN CREAR ASESORÍA === */

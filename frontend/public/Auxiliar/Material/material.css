@@ -25,21 +25,13 @@ body {
   animation: fadeIn 0.7s ease-in-out;
   transition: 0.3s ease;
 }
-
 .container:hover {
   transform: scale(1.02);
   box-shadow: 0 0 45px rgba(255, 180, 180, 0.6);
 }
-
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(25px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(25px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* === ENCABEZADO === */
@@ -50,17 +42,12 @@ header {
   border-bottom: 3px solid #7a0000;
   padding-bottom: 8px;
 }
-
 header h1 {
   font-size: 2em;
   color: #7a0000;
   text-shadow: 1px 1px 2px #ffdddd;
 }
-
-.logo {
-  width: 80px;
-  height: auto;
-}
+.logo { width: 80px; height: auto; }
 
 /* === FILA DE FORMULARIO Y TABLA === */
 .fila {
@@ -80,7 +67,6 @@ header h1 {
   border-radius: 18px;
   box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.25), 0 4px 12px rgba(0, 0, 0, 0.25);
 }
-
 .formulario label {
   display: block;
   font-weight: bold;
@@ -88,7 +74,6 @@ header h1 {
   font-size: 1.1em;
   color: #7a0000;
 }
-
 .formulario input {
   width: 100%;
   padding: 12px;
@@ -100,7 +85,6 @@ header h1 {
   margin-bottom: 18px;
   transition: 0.3s;
 }
-
 .formulario input:focus {
   outline: none;
   border-color: #cc0000;
@@ -115,7 +99,6 @@ header h1 {
   border-radius: 18px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-
 table {
   width: 100%;
   border-collapse: collapse;
@@ -124,25 +107,24 @@ table {
   background: #fffafc;
   box-shadow: 0 3px 10px rgba(120, 0, 0, 0.1);
 }
-
 th {
   background: linear-gradient(to right, #b30000, #7a0000);
   color: #fff;
   font-weight: bold;
   padding: 14px;
   font-size: 1.05em;
+  text-align: center;
 }
-
 td {
   border-bottom: 1px solid #d6bcbc;
   padding: 12px;
   text-align: center;
   color: #5a0000;
 }
+tr:hover td { background: #ffe8e8; }
 
-tr:hover td {
-  background: #ffe8e8;
-}
+/* Fila seleccionada (JS añade la clase) */
+tr.seleccionada td { background: #ffd0d0 !important; }
 
 /* === BOTONES === */
 footer {
@@ -153,7 +135,6 @@ footer {
   flex-wrap: wrap;
   margin-top: 10px;
 }
-
 .btn {
   background: linear-gradient(to right, #b30000, #7a0000);
   color: white;
@@ -169,44 +150,69 @@ footer {
   align-items: center;
   gap: 8px;
 }
-
 .btn:hover {
   transform: translateY(-3px) scale(1.05);
   background: linear-gradient(to right, #d00000, #8b0000);
   box-shadow: 0 8px 20px rgba(122,0,0,0.6);
 }
 
-/* === ICONOS === */
+/* === ICONOS (flecha + casa) === */
 .iconos {
   margin-left: auto;
   display: flex;
   gap: 20px;
+  align-items: center;
 }
-
 .icono {
-  font-size: 2em;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
   color: #7a0000;
   text-decoration: none;
-  transition: 0.3s;
+  border-radius: 50%;
+  transition: transform .18s ease, color .18s ease, filter .18s ease;
 }
-
+.svg-icon { width: 26px; height: 26px; display: block; }
 .icono:hover {
-  color: #d00000;
-  transform: scale(1.15) rotate(-5deg);
+  color: #e00000;
+  transform: translateY(-1px) scale(1.12);
+  filter: drop-shadow(0 0 6px rgba(255,0,0,.35));
 }
+.icono-home:hover .svg-icon { transform: scale(1.04); }
+.icono-back:hover .svg-icon { transform: translateX(-1px) scale(1.04); }
 
 /* === RESPONSIVO === */
 @media (max-width: 900px) {
-  .fila {
-    flex-direction: column;
-    align-items: center;
-  }
+  .fila { flex-direction: column; align-items: center; }
+  .formulario, .tabla { width: 90%; }
+  header h1 { font-size: 1.6em; }
+}
 
-  .formulario, .tabla {
-    width: 90%;
-  }
+/* … (tu CSS tal cual) … */
 
-  header h1 {
-    font-size: 1.6em;
-  }
+/* Hint de stock bajo la clave */
+.stock-hint{
+  display:block;
+  margin-top:6px;
+  font-size:.9em;
+  color:#5a0000;
+  opacity:.85;
+}
+
+/* Tabla ahora es de 2 columnas; estilos previos sirven igual */
+tr.seleccionada td { background:#ffd0d0 !important; }
+
+/* Iconos (flecha + casa) estilos que ya tenías */
+.iconos{ margin-left:auto; display:flex; gap:20px; align-items:center; }
+.icono{ width:44px; height:44px; display:grid; place-items:center; color:#7a0000; border-radius:50%; text-decoration:none; transition:transform .18s, color .18s, filter .18s; }
+.svg-icon{ width:26px; height:26px; display:block; }
+.icono:hover{ color:#e00000; transform:translateY(-1px) scale(1.12); filter:drop-shadow(0 0 6px rgba(255,0,0,.35)); }
+.icono-home:hover .svg-icon{ transform:scale(1.04); }
+.icono-back:hover .svg-icon{ transform:translateX(-1px) scale(1.04); }
+button:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+  filter:grayscale(.4);
+  box-shadow:none;
 }

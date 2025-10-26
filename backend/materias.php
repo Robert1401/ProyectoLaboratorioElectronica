@@ -1,129 +1,181 @@
 <?php
-header("Content-Type: application/json; charset=UTF-8");
+/****************************************************
+ *  API Materias (CRUD) — SIN lógica de activo/inactivo
+ ****************************************************/
+
+header("Content-Type: application/json; charset=utf-8");
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
-if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
-    http_response_code(200);
-    exit();
+$DB = [
+  'host' => '127.0.0.1',
+  'user' => 'root',
+  'pass' => 'root', // ajusta si tu clave es distinta
+  'name' => 'Laboratorio_Electronica',
+];
+
+function json_ok(array $data = [], int $code = 200): void {
+  http_response_code($code);
+  echo json_encode($data, JSON_UNESCAPED_UNICODE);
+  exit;
+}
+function json_err(string $msg, int $code = 400): void {
+  http_response_code($code);
+  echo json_encode(['error' => $msg], JSON_UNESCAPED_UNICODE);
+  exit;
+}
+function read_json_body(): array {
+  $raw  = file_get_contents("php://input") ?: '';
+  $data = json_decode($raw, true);
+  if (!is_array($data)) { parse_str($raw, $data); }
+  return is_array($data) ? $data : [];
 }
 
-// 🔹 Conexión a la base de datos
-$servername = "127.0.0.1";
-$username = "root";
-$password = "root"; // Cambia si tu contraseña es distinta
-$dbname = "Laboratorio_Electronica";
-
-$conn = new mysqli($servername, $username, $password, $dbname);
-if ($conn->connect_error) {
-    die(json_encode(["error" => "Error de conexión: " . $conn->connect_error]));
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+try {
+  $mysqli = new mysqli($DB['host'], $DB['user'], $DB['pass'], $DB['name']);
+  $mysqli->set_charset("utf8mb4");
+} catch (Throwable $e) {
+  json_err("Error de conexión a la base de datos.", 500);
 }
-$conn->set_charset("utf8");
 
-// Detectar método
-$method = $_SERVER["REQUEST_METHOD"];
+$method = $_SERVER["REQUEST_METHOD"] ?? 'GET';
 
-// ==========================================
-// 📘 GET: Listar materias o carreras
-// ==========================================
-if ($method === "GET") {
-    if (isset($_GET["tipo"]) && $_GET["tipo"] === "carreras") {
-        $result = $conn->query("SELECT id_Carrera, nombre FROM Carreras");
-        $carreras = [];
-        while ($row = $result->fetch_assoc()) {
-            $carreras[] = $row;
-        }
-        echo json_encode($carreras);
-        exit();
+// GET ?tipo=carreras (opcional)
+if ($method === "GET" && isset($_GET["tipo"]) && $_GET["tipo"] === "carreras") {
+  try {
+    $res = $mysqli->query("SELECT id_Carrera, nombre FROM Carreras ORDER BY nombre");
+    $rows = $res->fetch_all(MYSQLI_ASSOC);
+    json_ok($rows);
+  } catch (Throwable $e) {
+    json_err("No se pudieron cargar carreras.", 500);
+  }
+}
+
+try {
+  switch ($method) {
+    // LISTAR
+    case "GET": {
+      $sql = "SELECT
+                m.id_Materia,
+                m.nombre AS materia,
+                m.id_Carrera,
+                m.id_Estado,
+                c.nombre AS carrera
+              FROM Materias m
+              LEFT JOIN Carreras c ON c.id_Carrera = m.id_Carrera
+              ORDER BY c.nombre, m.nombre";
+      $res  = $mysqli->query($sql);
+      $rows = $res->fetch_all(MYSQLI_ASSOC);
+      json_ok($rows);
+    }
+
+    // CREAR
+    case "POST": {
+      $in         = read_json_body();
+      $nombre     = trim($in["nombre"]     ?? "");
+      $id_Carrera = (int)($in["id_Carrera"] ?? 0);
+      if ($nombre === "" || $id_Carrera <= 0) json_err("Nombre e id_Carrera son obligatorios.", 400);
+
+      $stmt = $mysqli->prepare(
+        "INSERT INTO Materias (id_Estado, id_Carrera, nombre) VALUES (1, ?, ?)"
+      );
+      $stmt->bind_param("is", $id_Carrera, $nombre);
+
+      try {
+        $stmt->execute();
+        json_ok([
+          "mensaje"    => "✅ Materia guardada",
+          "id_Materia" => $stmt->insert_id,
+          "nombre"     => $nombre,
+          "id_Carrera" => $id_Carrera,
+          "id_Estado"  => 1
+        ], 201);
+      } catch (mysqli_sql_exception $e) {
+        if ($e->getCode() === 1062) json_err("❗ Esa materia ya existe en esa carrera.", 409);
+        json_err("No se pudo guardar la materia.", 500);
+      }
+    }
+
+    // ACTUALIZAR (editar nombre/carrera) — SIN toggle
+    case "PUT": {
+      $in         = read_json_body();
+      $id_Materia = (int)($in["id_Materia"] ?? 0);
+      $nombre     = trim($in["nombre"] ?? "");
+      $id_Carrera = (int)($in["id_Carrera"] ?? 0);
+
+      if ($id_Materia <= 0 || $nombre === "" || $id_Carrera <= 0) {
+        json_err("Datos incompletos para actualizar.", 400);
+      }
+
+      $stmt = $mysqli->prepare(
+        "UPDATE Materias SET nombre = ?, id_Carrera = ? WHERE id_Materia = ?"
+      );
+      $stmt->bind_param("sii", $nombre, $id_Carrera, $id_Materia);
+
+      try {
+        $stmt->execute();
+        json_ok(["mensaje" => "✏️ Materia actualizada"]);
+      } catch (mysqli_sql_exception $e) {
+        if ($e->getCode() === 1062) json_err("❗ Ese nombre ya existe en esa carrera.", 409);
+        json_err("No se pudo actualizar la materia.", 500);
+      }
+    }
+
+    // DELETE físico
+   // ... (encabezados y helpers iguales)
+
+// En el switch($method), dentro de "DELETE" REEMPLAZA por esto:
+case "DELETE": {
+  // 1) Purga de INACTIVAS si viene ?inactive=1
+  if (isset($_GET["inactive"]) && (int)$_GET["inactive"] === 1) {
+    // id_Estado: 1=Activo, otros = inactivos
+    $stmt = $mysqli->prepare("DELETE FROM Materias WHERE id_Estado <> 1");
+    try {
+      $stmt->execute();
+      $deleted = $stmt->affected_rows;
+      json_ok(["mensaje"=>"Purgadas inactivas", "eliminadas"=>$deleted]);
+    } catch (mysqli_sql_exception $e) {
+      json_err("No se pudo purgar inactivas.", 500);
+    }
+  }
+
+  // 2) Borrado individual por id_Materia
+  $in         = read_json_body();
+  $id_Materia = isset($_GET["id_Materia"])
+    ? (int)$_GET["id_Materia"]
+    : (int)($in["id_Materia"] ?? 0);
+
+  if ($id_Materia <= 0) json_err("ID inválido.", 400);
+
+  $stmt = $mysqli->prepare("DELETE FROM Materias WHERE id_Materia = ?");
+  $stmt->bind_param("i", $id_Materia);
+
+  try {
+    $stmt->execute();
+    if ($stmt->affected_rows === 0) {
+      json_ok(["mensaje" => "Nada para eliminar (ID no encontrado)."]);
     } else {
-        // Listar materias con nombre de carrera
-        $query = "SELECT m.id_Materia, m.nombre AS materia, c.nombre AS carrera
-                  FROM Materias m
-                  LEFT JOIN Carreras c ON m.id_Carrera = c.id_Carrera";
-        $result = $conn->query($query);
-        $materias = [];
-        while ($row = $result->fetch_assoc()) {
-            $materias[] = $row;
-        }
-        echo json_encode($materias);
-        exit();
+      json_ok(["mensaje" => "🗑️ Materia eliminada"]);
     }
+  } catch (mysqli_sql_exception $e) {
+    if ($e->getCode() == 1451) {
+      json_err("No se puede eliminar: hay registros relacionados.", 409);
+    }
+    json_err("No se pudo eliminar la materia.", 500);
+  }
 }
 
-// ==========================================
-// 📗 POST: Agregar nueva materia
-// ==========================================
-if ($method === "POST") {
-    $data = json_decode(file_get_contents("php://input"), true);
-    if (empty($data["nombre"]) || empty($data["id_Carrera"])) {
-        echo json_encode(["error" => "Faltan campos obligatorios"]);
-        exit();
-    }
 
-    $nombre = $data["nombre"];
-    $idCarrera = $data["id_Carrera"];
-    $idEstado = 1;
-
-    $stmt = $conn->prepare("INSERT INTO Materias (id_Estado, id_Carrera, nombre) VALUES (?, ?, ?)");
-    $stmt->bind_param("iis", $idEstado, $idCarrera, $nombre);
-    if ($stmt->execute()) {
-        echo json_encode(["mensaje" => "Materia agregada correctamente"]);
-    } else {
-        echo json_encode(["error" => "Error al agregar: " . $stmt->error]);
-    }
-    $stmt->close();
-    exit();
+    default:
+      json_err("Método no permitido.", 405);
+  }
+} catch (Throwable $e) {
+  json_err("Error inesperado.", 500);
+} finally {
+  if (isset($mysqli) && $mysqli instanceof mysqli) {
+    $mysqli->close();
+  }
 }
-
-// ==========================================
-// 📙 PUT: Actualizar materia
-// ==========================================
-if ($method === "PUT") {
-    $data = json_decode(file_get_contents("php://input"), true);
-    if (empty($data["id_Materia"]) || empty($data["nombre"]) || empty($data["id_Carrera"])) {
-        echo json_encode(["error" => "Faltan parámetros"]);
-        exit();
-    }
-
-    $id = $data["id_Materia"];
-    $nombre = $data["nombre"];
-    $idCarrera = $data["id_Carrera"];
-
-    $stmt = $conn->prepare("UPDATE Materias SET nombre=?, id_Carrera=? WHERE id_Materia=?");
-    $stmt->bind_param("sii", $nombre, $idCarrera, $id);
-    if ($stmt->execute()) {
-        echo json_encode(["mensaje" => "Materia actualizada correctamente"]);
-    } else {
-        echo json_encode(["error" => "Error al actualizar: " . $stmt->error]);
-    }
-    $stmt->close();
-    exit();
-}
-
-// ==========================================
-// 📕 DELETE: Eliminar materia
-// ==========================================
-if ($method === "DELETE") {
-    $data = json_decode(file_get_contents("php://input"), true);
-    if (empty($data["id_Materia"])) {
-        echo json_encode(["error" => "Falta id_Materia"]);
-        exit();
-    }
-
-    $id = $data["id_Materia"];
-    $stmt = $conn->prepare("DELETE FROM Materias WHERE id_Materia=?");
-    $stmt->bind_param("i", $id);
-    if ($stmt->execute()) {
-        echo json_encode(["mensaje" => "Materia eliminada correctamente"]);
-    } else {
-        echo json_encode(["error" => "Error al eliminar: " . $stmt->error]);
-    }
-    $stmt->close();
-    exit();
-}
-
-// Si llega aquí, método no soportado
-echo json_encode(["error" => "Método no soportado"]);
-$conn->close();
-?>

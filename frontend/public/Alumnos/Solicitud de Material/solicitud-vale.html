@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Solicitud – Vale de Materiales</title>
+
+  <link rel="stylesheet" href="solicitud-vale.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Estilos para avisos/modales centrados -->
+  <style>
+    /* ===== Notice / Modal Center ===== */
+    .notice-host,
+    .modal-host{
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: none;           /* se muestra por JS */
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-host::before{
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,.35);
+      backdrop-filter: blur(2px);
+    }
+    .notice-card,
+    .modal-card{
+      position: relative;
+      max-width: min(520px, 92vw);
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 22px 60px rgba(0,0,0,.28), inset 0 0 0 1px #eee;
+      padding: 20px 18px;
+      text-align: left;
+      transform: translateY(10px) scale(.98);
+      opacity: 0;
+      transition: transform .18s ease, opacity .18s ease;
+    }
+    .notice-host.show .notice-card,
+    .modal-host.show .modal-card{
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+    .notice-host.show, .modal-host.show{ display:flex; }
+
+    .notice-head,.modal-head{ display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+    .notice-icon{ width:42px; height:42px; border-radius:12px; display:grid; place-items:center; font-size:22px; color:#fff; }
+    .notice-icon.success{ background:#16a34a; }
+    .notice-icon.info{ background:#2563eb; }
+    .notice-icon.warn{ background:#d97706; }
+    .notice-icon.error{ background:#dc2626; }
+    .notice-title,.modal-title{ margin:0; font-weight:800; font-size:18px; color:#111; }
+    .notice-msg,.modal-msg{ margin:6px 0 0; color:#333; line-height:1.4; }
+    .notice-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:14px; }
+
+    .btn{ appearance:none; border:none; cursor:pointer; font-weight:700; border-radius:12px; padding:10px 16px; transition: transform .08s, box-shadow .15s, filter .15s; }
+    .btn:active{ transform: translateY(1px); }
+    .btn-primary{ color:#fff; background:linear-gradient(180deg,#b8191b,#a11214 60%,#8f0f11); box-shadow:0 10px 20px rgba(178,14,16,.35); }
+    .btn-ghost{ color:#b8191b; background:#fff; box-shadow: inset 0 0 0 1px #e6e6ec; }
+
+    .notice-timer{ position:absolute; left:0; right:0; bottom:0; height:4px; border-radius:0 0 16px 16px; overflow:hidden; background:#f2f2f7; }
+    .notice-timer>i{ display:block; height:100%; width:100%; transform-origin:left; animation: notice-life linear forwards; background: linear-gradient(90deg,#22c55e,#16a34a); }
+    @keyframes notice-life { from{ transform:scaleX(1)} to{ transform:scaleX(0)} }
+  </style>
+</head>
+
+<body>
+  <div class="frame">
+    <section aria-label="Solicitud de vale">
+
+      <!-- Header -->
+      <header>
+        <div class="logos">
+          <img class="logo" src="../assets/logo1.png" alt="Secretaría de Educación">
+        </div>
+        <h1 class="title">
+          SOLICITUD DEPARTAMENTO DE<br>
+          INGENIERÍA ELÉCTRICA–ELECTRÓNICA
+        </h1>
+        <div class="logos" style="justify-content:flex-end">
+          <img class="logo" src="../assets/escudo.png" alt="TecNM">
+        </div>
+      </header>
+
+      <!-- Panel -->
+      <div class="panel">
+        <!-- Meta -->
+        <div class="row meta">
+          <label class="field">
+            <span>Fecha:</span>
+            <input type="date" id="fecha" required>
+          </label>
+
+          <label class="field">
+            <span>Hora:</span>
+            <input type="time" id="hora" required>
+          </label>
+
+          <label class="field grow">
+            <span>No. vale:</span>
+            <input type="text" id="noVale" placeholder="— — — —" inputmode="numeric">
+          </label>
+        </div>
+
+        <h2 class="lab-title">Laboratorio de electrónica analógica</h2>
+
+        <div class="grid">
+          <!-- Tabla -->
+          <div class="tabla-wrap">
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th style="width:120px;">Cantidad</th>
+                  <th>Descripción</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyMateriales">
+                <!-- 4 filas por defecto -->
+                <tr>
+                  <td><input type="number" min="0" step="1" class="qty"></td>
+                  <td><input type="text" class="desc" placeholder="Descripción del material"></td>
+                </tr>
+                <tr>
+                  <td><input type="number" min="0" step="1" class="qty"></td>
+                  <td><input type="text" class="desc" placeholder="Descripción del material"></td>
+                </tr>
+                <tr>
+                  <td><input type="number" min="0" step="1" class="qty"></td>
+                  <td><input type="text" class="desc" placeholder="Descripción del material"></td>
+                </tr>
+                <tr>
+                  <td><input type="number" min="0" step="1" class="qty"></td>
+                  <td><input type="text" class="desc" placeholder="Descripción del material"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Sidebar -->
+          <div class="sidebar">
+            <label class="field block">
+              <span>Materia:</span>
+              <select id="materia"><option value="">Seleccione…</option></select>
+            </label>
+
+            <label class="field block">
+              <span>Maestro:</span>
+              <select id="maestro"><option value="">Seleccione…</option></select>
+            </label>
+
+            <label class="field block">
+              <span>Mesa:</span>
+              <select id="mesa"><option value="">Seleccione…</option></select>
+            </label>
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="actions">
+          <button class="btn btn-primary" id="btnPedir" type="button">Pedir</button>
+          <button class="btn btn-ghost" id="btnCancelar" type="button">Cancelar</button>
+        </div>
+
+        <!-- Navegación -->
+      </div>
+    </section>
+  </div>
+
+  <!-- Aviso centrado -->
+  <div id="noticeHost" class="notice-host" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Confirm personalizado -->
+  <div id="modalHost" class="modal-host" role="dialog" aria-modal="true"></div>
+
+  <script src="../src/solicitud-vale.js"></script>
+</body>
+</html>
