@@ -6,11 +6,19 @@ header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
+<<<<<<< HEAD
+// 🔹 Conexión
+$servername = "127.0.0.1";
+$username = "root";
+$password = "root";
+$dbname = "Laboratorio_Electronica";
+=======
 // ===== Conexión BD =====
 $host = "127.0.0.1";
 $user = "root";
 $pass = "root";
 $db   = "Laboratorio_Electronica";
+>>>>>>> 5e57e57cd52febb9c0343cce623d814322ff019d
 
 $mysqli = @new mysqli($host, $user, $pass, $db);
 if ($mysqli->connect_error) {

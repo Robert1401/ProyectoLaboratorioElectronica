@@ -10,6 +10,53 @@
 </head>
 <body>
   <div class="container">
+<<<<<<< HEAD
+    <header>
+<img src="../../assets/logo1.png" alt="Logo TecNM" class="logo izquierda">
+      <h1>Agregar Carreras</h1>
+<img src="../../assets/escudo.png" alt="Escudo" class="logo derecha">
+    </header>
+
+    <!-- Tabla -->
+    <div class="tabla">
+      <table id="tablaAsesorias">
+        <thead>
+          <tr>
+            <th>Auxiliar/Maestro</th>
+            <th>Fecha de la asesoria y hora</th>
+            <th>Cantidad de asistentes a la asesoria</th>
+            <th>Estatus</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Pepe</td><td>2025-09-22 15:30</td><td>3</td><td>Pendiente</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Botón Crear Asesoría -->
+    <div class="boton-crear">
+  <button class="btn-crear" onclick="irA('crear_asesoria.html')">
+    <i class="fa-solid fa-graduation-cap"></i> Crear Asesoría
+  </button>
+</div>
+<script>
+  function irA(ruta) {
+    window.location.href = ruta;
+  }
+</script>
+
+    <!-- Footer con iconos -->
+    <footer>
+      <div class="iconos">
+        <a href="../auxiliar.html" class="icono"><i class="fa-solid fa-arrow-left"></i></a>
+        <a href="../../Login/index.html" class="icono"><i class="fa-solid fa-house"></i></a>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/frontend/src/tablaAsesorias"></script>
+=======
     <div class="content-card">
       <!-- Header -->
       <header class="header">
@@ -109,5 +156,7 @@
   <!-- JS externo (mismo patrón de rutas que tu segundo HTML) -->
   <script src="../../src/asesorias.js"></script>
    <script src="../../src/notify.js"></script>
+>>>>>>> 5e57e57cd52febb9c0343cce623d814322ff019d
 </body>
 </html>
+

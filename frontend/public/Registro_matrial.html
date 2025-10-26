@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Compra de Material</title>
+    <link rel="stylesheet" href="Registro_material.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Encabezado -->
+        <header>
+            <img src="logo_tec.png" alt="Logo TecNM" class="logo">
+            <h1>Registro de Compra<br>Material</h1>
+            <img src="logo_escudo.png" alt="Escudo" class="logo">
+        </header>
+
+        <!-- Contenido principal -->
+        <div class="content">
+            <div class="form-section">
+                <div class="row">
+                    <label for="fecha">Fecha:</label>
+                    <input type="date" id="fecha">
+                    <label for="auxiliar">Auxiliar:</label>
+                    <input type="text" id="auxiliar" placeholder="Ingrese el nombre del auxiliar">
+                </div>
+
+                <div class="row">
+                    <label for="material">Material:</label>
+                    <select id="material">
+                        <option value="">Seleccione un material</option>
+                        <option>Cartulina</option>
+                        <option>Papel bond</option>
+                        <option>Marcadores</option>
+                    </select>
+
+                    <label for="cantidad">Cantidad:</label>
+                    <input type="number" id="cantidad" placeholder="0" min="1">
+
+                    <button class="agregar">Agregar</button>
+                </div>
+            </div>
+
+            <!-- Tabla -->
+            <div class="table-section">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nombre del producto</th>
+                            <th>Cantidad</th>
+                            <th>Fecha de ingreso del material</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="buttons">
+            <button class="guardar">Guardar</button>
+            <button class="actualizar">Actualizar</button>
+            <button class="eliminar">Eliminar</button>
+        </div>
+
+        <!-- Navegación -->
+        <div class="navigation">
+            <button class="home" onclick="window.location.href='auxiliar.html'" title="Inicio">
+            </button>
+        </div>
+    </div>
+</body>
+</html>

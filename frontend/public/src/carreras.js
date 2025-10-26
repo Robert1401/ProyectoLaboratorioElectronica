@@ -9,6 +9,16 @@ let carreras = [];
 let idSeleccionado   = null;   // id de la fila seleccionada (null = modo Nueva)
 let nombreOriginal   = "";     // nombre original de la fila seleccionada (para detectar "dirty")
 
+<<<<<<< HEAD
+// 🔹 Cargar carreras al inicio
+document.addEventListener("DOMContentLoaded", cargarMateriales);
+
+async function cargarMateriales() {
+  const res = await fetch("/backend/carreras.php");
+  const data = await res.json();
+  carreras = data;
+  mostrarTabla();
+=======
 const API = "/backend/carreras.php";
 
 /* ========== Toast ========== */
@@ -25,6 +35,7 @@ function showToast(message, type = "info", duration = 2200) {
   const hide = () => { host.classList.remove("show"); host.innerHTML = ""; };
   const t = setTimeout(hide, duration);
   host.onclick = () => { clearTimeout(t); hide(); };
+>>>>>>> 5e57e57cd52febb9c0343cce623d814322ff019d
 }
 
 /* ========== Confirm ========== */
@@ -178,6 +189,12 @@ btnGuardar.addEventListener("click", async () => {
       body: JSON.stringify({ nombre })
     });
 
+<<<<<<< HEAD
+  const data = await res.json();
+  alert(data.mensaje || data.error);
+  inputNombre.value = "";
+  cargarMateriales();
+=======
     showToast("✅ Guardado. Ahora puedes actualizar o eliminar.", "success");
 
     // Añadir en memoria y re-render
@@ -204,6 +221,7 @@ btnGuardar.addEventListener("click", async () => {
   } catch (err) {
     showToast(err.message, "error", 3200);
   }
+>>>>>>> 5e57e57cd52febb9c0343cce623d814322ff019d
 });
 
 /* ========== Actualizar ========== */
@@ -223,6 +241,13 @@ btnActualizar.addEventListener("click", async () => {
       body: JSON.stringify({ id_Carrera: idSeleccionado, nombre })
     });
 
+<<<<<<< HEAD
+  const data = await res.json();
+  alert(data.mensaje || data.error);
+  inputNombre.value = "";
+  idSeleccionado = null;
+  cargarMateriales();
+=======
     // Actualiza memoria y UI
     const idx = carreras.findIndex(x => x.id_Carrera === idSeleccionado);
     if (idx !== -1) carreras[idx].nombre = nombre;
@@ -236,6 +261,7 @@ btnActualizar.addEventListener("click", async () => {
   } catch (err) {
     showToast(err.message, "error", 3200);
   }
+>>>>>>> 5e57e57cd52febb9c0343cce623d814322ff019d
 });
 
 /* ========== Eliminar (con bloqueo si hay cambios) ========== */
@@ -247,6 +273,11 @@ btnEliminar.addEventListener("click", async () => {
     return;
   }
 
+<<<<<<< HEAD
+  inputNombre.value = "";
+  idSeleccionado = null;
+  cargarMateriales();
+=======
   // Tomar nombre visible para el mensaje
   const filaSel = [...tabla.querySelectorAll("tr")].find(tr => tr.classList.contains("seleccionada"));
   const nombreSel = filaSel ? filaSel.textContent.trim() : "esta carrera";
@@ -270,4 +301,5 @@ btnEliminar.addEventListener("click", async () => {
   } catch (err) {
     showToast(err.message || "No se pudo eliminar.", "error");
   }
+>>>>>>> 5e57e57cd52febb9c0343cce623d814322ff019d
 });
