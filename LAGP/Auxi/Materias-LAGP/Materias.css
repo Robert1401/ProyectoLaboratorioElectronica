@@ -1,0 +1,24 @@
+#AreaTrabajo{
+    margin-left: 8vh;
+    margin-right: 8vh;
+    margin-top: 10vh;
+}
+#Registro{
+    justify-content: center;
+}
+#RegistroComun{
+    display: flex;
+    flex-direction: column;
+    width: 40%;
+    gap: 1rem;
+    align-items: center;
+}
+input{
+    width: 90%;
+    font-size: 1rem;
+    color: gray;
+    padding: 0.3rem;
+}
+span{
+    font-size: 1.2rem;
+}
