@@ -1,0 +1,17 @@
+{
+    "name": "alber/php",
+    "autoload": {
+        "psr-4": {
+            "Alber\\Php\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Luis",
+            "email": "luisagp2005@gmail.com"
+        }
+    ],
+    "require": {
+        "vlucas/phpdotenv": "^5.6"
+    }
+}

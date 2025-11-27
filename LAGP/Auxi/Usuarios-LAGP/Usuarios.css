@@ -1,0 +1,56 @@
+#AreaTrabajo{
+    margin-left: 8vh;
+    margin-right: 8vh;
+    margin-top: 10vh;
+}
+#Registro{
+    justify-content: center;
+    gap: 1%;
+}
+#RegistroComun, #TipoRegistro, #RegistroAlumnos{
+    display: flex;
+    flex-direction: column;
+    width: 30%;
+    gap: 0.5rem;
+}
+input, select{
+    width: 90%;
+    font-size: 1rem;
+    color: gray;
+    padding: 0.3rem;
+}
+#clave{
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+}
+#clave button{
+    background: none;
+    border: none;
+    box-shadow: none;
+    width: 10%;
+    padding: 0%;
+}
+#clave svg{
+    width: 90%;
+    fill: black;
+}
+#clave button:hover{
+    transform: none;
+}
+#clave :hover svg path{
+    fill: rgb(214, 16, 16);
+}
+.Carreras{
+    /*Solo se muestra si está seleccionado alumnos*/
+    display: none;
+}
+h1{
+    font-size: 2.5rem;
+}
+span{
+    font-size: 1rem;
+}
+th{
+    width: 25%;
+}

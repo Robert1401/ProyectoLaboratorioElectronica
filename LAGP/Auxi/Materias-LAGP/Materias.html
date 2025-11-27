@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Materias</title>
+    <link rel="stylesheet" href="../../General-LAGP.css">
+    <link rel="stylesheet" href="Materias.css">
+    <link rel="stylesheet" href="../../mensajes.css">
+</head>
+<body>
+    <div id="AreaTrabajo">
+        <div id="Encabezado">
+            <img src="../../img/TECNM.png" alt="Logo de Tecnológico Nacional  de México">
+            <h1>Materias</h1>
+            <img src="../../img/escudo.png" alt="Logo de Instituto Tecnológico de Saltillo">
+        </div>
+        <hr>
+        <form id="Formulario" action="">
+            <div id="Registro">
+                <div id="RegistroComun">
+                    <span>Nombre de la materia:</span>
+                    <input  type="text" placeholder=" Escribe ..." minlength="1" maxlength="50" id="nombreMateria" required
+                            pattern="^[A-Za-z0-9ÁÉÍÓÚáéíóúÑñ\s]+$"
+                            title="Introduce solo letras"
+                            oninput="this.value = this.value.replace(/[^A-Za-z0-9ÁÉÍÓÚáéíóúÑñ\s]/g, '')
+                                     this.value = this.value.replace(/^\s+/, '');"
+                    >
+                </div>
+            </div>
+            <div id="Botones">
+                <button title="Escribe algo en el campo para guardar" id="Guardar" type="button">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icono"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.--><path fill="#ffffff" d="M64 32C28.7 32 0 60.7 0 96L0 416c0 35.3 28.7 64 64 64l320 0c35.3 0 64-28.7 64-64l0-242.7c0-17-6.7-33.3-18.7-45.3L352 50.7C340 38.7 323.7 32 306.7 32L64 32zm32 96c0-17.7 14.3-32 32-32l160 0c17.7 0 32 14.3 32 32l0 64c0 17.7-14.3 32-32 32l-160 0c-17.7 0-32-14.3-32-32l0-64zM224 288a64 64 0 1 1 0 128 64 64 0 1 1 0-128z"/></svg>
+                    Guardar
+                </button>
+                <button title="Selecciona primero un elemento de la tabla para modificar" id="Modificar" type="button">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icono"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.--><path fill="#ffffff" d="M480.1 192l7.9 0c13.3 0 24-10.7 24-24l0-144c0-9.7-5.8-18.5-14.8-22.2S477.9 .2 471 7L419.3 58.8C375 22.1 318 0 256 0 127 0 20.3 95.4 2.6 219.5 .1 237 12.2 253.2 29.7 255.7s33.7-9.7 36.2-27.1C79.2 135.5 159.3 64 256 64 300.4 64 341.2 79 373.7 104.3L327 151c-6.9 6.9-8.9 17.2-5.2 26.2S334.3 192 344 192l136.1 0zm29.4 100.5c2.5-17.5-9.7-33.7-27.1-36.2s-33.7 9.7-36.2 27.1c-13.3 93-93.4 164.5-190.1 164.5-44.4 0-85.2-15-117.7-40.3L185 361c6.9-6.9 8.9-17.2 5.2-26.2S177.7 320 168 320L24 320c-13.3 0-24 10.7-24 24L0 488c0 9.7 5.8 18.5 14.8 22.2S34.1 511.8 41 505l51.8-51.8C137 489.9 194 512 256 512 385 512 491.7 416.6 509.4 292.5z"/></svg>
+                    Actualizar
+                </button>
+                <button title="Selecciona primero un elemento de la tabla para eliminar" id="Eliminar" type="button">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icono"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.--><path fill="#ffffff" d="M136.7 5.9L128 32 32 32C14.3 32 0 46.3 0 64S14.3 96 32 96l384 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0-8.7-26.1C306.9-7.2 294.7-16 280.9-16L167.1-16c-13.8 0-26 8.8-30.4 21.9zM416 144L32 144 53.1 467.1C54.7 492.4 75.7 512 101 512L347 512c25.3 0 46.3-19.6 47.9-44.9L416 144z"/></svg>
+                    Eliminar
+                </button>
+                <button title="Presiona para cancelar la modificación" id="Cancelar" type="button">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="icono"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.--><path fill="#ffffff" d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg>
+                    Cancelar
+                </button>
+            </div>
+        </form>
+        <div id="tabla">
+            <table id="tablaDinamica">
+                <thead>
+                    <tr><th>Materias</th></tr>
+                </thead>
+                <tbody>
+
+                </tbody>
+            </table>
+        </div>
+        <div id="Cont-Regreso">
+            <button id="btn-regreso" type="button" onclick="salir()">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" ><path d="M575.8 255.5c0 8.7-7.1 15.8-15.8 15.8H512v192c0 26.5-21.5 48-48 48H368c-8.8 0-16-7.2-16-16V368c0-17.7-14.3-32-32-32H256c-17.7 0-32 14.3-32 32v127.3c0 8.8-7.2 16-16 16H112c-26.5 0-48-21.5-48-48V271.3H16c-8.8 0-16-7.1-16-15.8c0-4.6 2-9 5.5-12.1L266.3 5.5c6-5.3 15.1-5.3 21.2 0l260.8 238c3.5 3.1 5.5 7.5 5.5 12z"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <script src="../../js/Materias-LAGP.js"></script>
+    <script src="../../js/mensajes.js"></script>
+</body>
+</html>
