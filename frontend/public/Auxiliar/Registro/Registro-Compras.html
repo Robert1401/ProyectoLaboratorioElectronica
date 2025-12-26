@@ -4,19 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Registro de Compra de Material</title>
-  <link rel="stylesheet" href="Registro-Compras.css"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
-  <style>
-    /* Mini toast para mensajes */
-    #toast {
-      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
-      background: #1f2937; color: #fff; padding: 10px 14px; border-radius: 8px;
-      font-size: 14px; box-shadow: 0 8px 20px rgba(0,0,0,.25); opacity: 0; pointer-events: none;
-      transition: opacity .25s ease;
-    }
-    #toast.show { opacity: 1; }
-  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="Registro-Compras.css" />
 </head>
+
 <body>
   <div class="container">
     <!-- ENCABEZADO -->
@@ -40,20 +31,36 @@
 
         <div class="field-line">
           <label for="auxiliar">Auxiliar:</label>
-          <input type="text" id="auxiliar" class="input-line" placeholder="" readonly/>
+          <input type="text" id="auxiliar" class="input-line" readonly/>
         </div>
       </div>
 
-      <!-- FILA MIDDLE: Material / Cantidad / Agregar -->
+      <!-- FILA MEDIA: Material (finder) / Cantidad / Agregar -->
       <div class="middle-row">
+        <!-- MATERIAL: buscador -->
         <div class="field">
-          <label for="material">Material:</label>
-          <div class="select-wrap">
-            <select id="material">
-              <option value="">Seleccione un material</option>
-              <!-- Opciones reales las carga el JS desde la API -->
-            </select>
-            <i class="fa-solid fa-caret-down caret"></i>
+          <label for="materialSearch">Material:</label>
+
+          <div class="finder" id="finder">
+            <i class="fa-solid fa-magnifying-glass finder-icon" aria-hidden="true"></i>
+
+            <!-- Input visible -->
+            <input
+              id="materialSearch"
+              type="text"
+              placeholder="Buscar material…"
+              autocomplete="off"
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-controls="finderList"
+              aria-haspopup="listbox"
+            />
+
+            <!-- Valor real (id_Material) que usa el JS -->
+            <input type="hidden" id="material" value="" />
+
+            <!-- Lista de sugerencias -->
+            <div class="finder-list hidden" id="finderList" role="listbox" aria-label="Materiales disponibles"></div>
           </div>
         </div>
 
@@ -67,12 +74,10 @@
           </div>
         </div>
 
-        <button class="btn btn-primary" id="agregar" title="Agregar a la tabla">
-          Agregar
-        </button>
+        <button class="btn btn-primary" id="agregar" title="Agregar a la tabla">Agregar</button>
       </div>
 
-      <!-- CONTENIDO: TABLA + BOTONES LATERALES -->
+      <!-- TABLA -->
       <div class="content-row">
         <div class="tabla">
           <table id="tablaMateriales">
@@ -81,6 +86,7 @@
                 <th>Nombre del producto</th>
                 <th>Cantidad</th>
                 <th>Fecha de ingreso del material</th>
+                <th style="width:140px">Acciones</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -89,31 +95,50 @@
       </div>
     </section>
 
-    <!-- FOOTER: Guardar + iconos -->
-  <!-- FOOTER: Guardar + iconos -->
-<footer class="footer-bar">
-  <button class="btn btn-primary" id="guardar">
-    <i class="fas fa-save"></i> Guardar
-  </button>
+    <!-- FOOTER -->
+    <footer class="footer-bar">
+      <div class="left-actions">
+        <button class="btn btn-primary" id="guardar">
+          <i class="fas fa-save"></i> Guardar
+        </button>
 
-  <!-- NUEVO botón: Ver la compra -->
-  <button class="btn btn-primary" id="btnVerCompras" title="Ver recibo de hoy">
-    <i class="fa-solid fa-receipt"></i> Ver la compra
-  </button>
+        <button class="btn btn-danger" id="cancelarPedido" title="Cancelar materiales en espera">
+          <i class="fa-solid fa-rotate-left"></i> Cancelar pedido
+        </button>
+      </div>
 
-  <div class="iconos">
-    <a href="../auxiliar.html" class="icono"><i class="fa-solid fa-arrow-left"></i></a>
-    <a href="../../Login/index.html" class="icono home-fab" aria-label="Inicio">
-      <i class="fa-solid fa-house"></i>
-    </a>
+      <div class="right-actions">
+        <button class="btn btn-primary" id="btnVerCompras" title="Ver recibo de hoy">
+          <i class="fa-solid fa-receipt"></i> Ver la compra
+        </button>
+
+        <div class="iconos">
+          <a href="../auxiliar.html" class="icono home-fab" aria-label="Inicio">
+            <i class="fa-solid fa-house"></i>
+          </a>
+        </div>
+      </div>
+    </footer>
   </div>
-</footer>
+
+  <!-- UI centrada: Toast + Modal -->
+  <div id="ui-layer">
+    <div id="toastCenter" aria-live="polite" role="status"></div>
+
+    <div id="modalRoot" class="hidden" aria-hidden="true">
+      <div class="modal-backdrop"></div>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-icon" id="modalIcon" aria-hidden="true">!</div>
+        <h3 id="modalTitle">¿Estás seguro?</h3>
+        <p id="modalMsg">Esta acción no se puede deshacer.</p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-danger" id="modalAccept">Sí</button>
+          <button type="button" class="btn btn-primary" id="modalCancel">No</button>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Toast -->
-  <div id="toast"></div>
-
-  <!-- Tu JS -->
   <script src="../../src/Registro-Compras.js"></script>
 </body>
 </html>

@@ -1,159 +1,106 @@
 "use strict";
 
-/* =========================================================
+/* =========================
    CONFIG
-========================================================= */
+========================= */
 const API_URL = "http://localhost:8000/backend/login.php";
 
-/* =========================================================
-   TOAST (notificaciones)
-========================================================= */
+/* =========================
+   TOAST
+========================= */
 function showToast(message, type = "info", duration = 3000) {
   const host = document.getElementById("toast");
   host.innerHTML = `<div class="card ${type}" role="status">${message}</div>`;
   host.classList.add("show");
-
-  const hide = () => {
-    host.classList.remove("show");
-    host.innerHTML = "";
-  };
-
+  const hide = () => { host.classList.remove("show"); host.innerHTML = ""; };
   const t = setTimeout(hide, duration);
-  host.onclick = () => {
-    clearTimeout(t);
-    hide();
-  };
+  host.onclick = () => { clearTimeout(t); hide(); };
 }
 
-/* =========================================================
-   RESTRICCIÓN #numeroControl (solo números)
-   - Bloquea letras al teclear
-   - Purga texto no numérico al pegar o cambiar
-   - Sin mostrar mensajes
-========================================================= */
+/* =========================
+   INPUTS: restricciones
+========================= */
 (() => {
   const nc = document.getElementById("numeroControl");
   if (!nc) return;
-
   nc.setAttribute("inputmode", "numeric");
   nc.setAttribute("pattern", "\\d*");
   nc.setAttribute("maxlength", "8");
 
-  // Bloquea teclas no numéricas (permite controles y atajos)
   nc.addEventListener("keydown", (e) => {
-    const allowed = ["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "Home", "End"];
-    if (allowed.includes(e.key) || e.ctrlKey || e.metaKey) return;
+    const ok = ["Backspace","Delete","Tab","ArrowLeft","ArrowRight","Home","End"];
+    if (ok.includes(e.key) || e.ctrlKey || e.metaKey) return;
     if (/^\d$/.test(e.key)) return;
     e.preventDefault();
   });
 
-  // Limpia pegado (solo deja dígitos)
   nc.addEventListener("paste", (e) => {
     const t = (e.clipboardData || window.clipboardData).getData("text") || "";
     if (/\D/.test(t)) {
       e.preventDefault();
       const digits = t.replace(/\D/g, "");
       if (!digits) return;
-
       const start = nc.selectionStart ?? nc.value.length;
-      const end = nc.selectionEnd ?? nc.value.length;
-      const max = nc.maxLength > 0 ? nc.maxLength : Infinity;
-
-      const newVal = (nc.value.slice(0, start) + digits + nc.value.slice(end)).slice(0, max);
-      const pos = Math.min(start + digits.length, newVal.length);
-
+      const end   = nc.selectionEnd   ?? nc.value.length;
+      const max   = nc.maxLength > 0 ? nc.maxLength : Infinity;
+      const newVal = (nc.value.slice(0,start) + digits + nc.value.slice(end)).slice(0,max);
+      const pos    = Math.min(start + digits.length, newVal.length);
       nc.value = newVal;
       requestAnimationFrame(() => nc.setSelectionRange(pos, pos));
     }
   });
 
-  // Fallback: purga cualquier carácter no numérico que se cuele
   nc.addEventListener("input", () => {
-    const digitsOnly = nc.value.replace(/\D/g, "");
-    if (digitsOnly !== nc.value) {
-      nc.value = digitsOnly;
-    }
+    const only = nc.value.replace(/\D/g, "");
+    if (only !== nc.value) nc.value = only;
   });
 })();
 
-/* =========================================================
-   RESTRICCIÓN #password (máx. 10 caracteres)
-========================================================= */
 (() => {
   const pw = document.getElementById("password");
   if (!pw) return;
-
   pw.setAttribute("maxlength", "10");
 
-  // Evita escribir más de 10 caracteres
   pw.addEventListener("keydown", (e) => {
-    const allowed = ["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "Home", "End"];
-    if (allowed.includes(e.key) || e.ctrlKey || e.metaKey) return;
-    if (pw.value.length >= 10) {
-      e.preventDefault();
-    }
+    const ok = ["Backspace","Delete","Tab","ArrowLeft","ArrowRight","Home","End"];
+    if (ok.includes(e.key) || e.ctrlKey || e.metaKey) return;
+    if (pw.value.length >= 10) e.preventDefault();
   });
 
-  // Evita pegar más de 10 caracteres
   pw.addEventListener("paste", (e) => {
-    const paste = (e.clipboardData || window.clipboardData).getData("text") || "";
-    const current = pw.value;
-    const selectionLength = pw.selectionEnd - pw.selectionStart;
-    const total = current.length - selectionLength + paste.length;
+    const p = (e.clipboardData || window.clipboardData).getData("text") || "";
+    const curr = pw.value;
+    const sel  = pw.selectionEnd - pw.selectionStart;
+    const total = curr.length - sel + p.length;
     if (total > 10) {
       e.preventDefault();
-      pw.value = (current.slice(0, pw.selectionStart) + paste).slice(0, 10);
+      pw.value = (curr.slice(0, pw.selectionStart) + p).slice(0, 10);
     }
   });
 })();
 
-/* =========================================================
-   LOGIN — Manejo de envío de formulario
-========================================================= */
+/* =========================
+   LOGIN
+========================= */
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const numeroControl = (document.getElementById("numeroControl").value || "").trim();
-  const password = (document.getElementById("password").value || "").trim();
-  const btn = e.submitter || document.querySelector('#loginForm button[type="submit"]');
+  const password      = (document.getElementById("password").value || "").trim();
+  const btn           = e.submitter || document.querySelector('#loginForm button[type="submit"]');
 
-  // Campos requeridos
   if (!numeroControl || !password) {
-    showToast("⚠️ Por favor, completa todos los campos.", "info", 3000);
-    return;
+    showToast("⚠️ Por favor, completa todos los campos.", "info"); return;
   }
-
-  // Debe ser numérico
   if (!/^\d+$/.test(numeroControl)) {
-    showToast("🔎 El número de control debe ser numérico.", "info", 3200);
-    return;
+    showToast("🔎 El número de control debe ser numérico.", "info"); return;
   }
-
-  // Longitud válida (4 auxiliar, 8 alumno)
   const len = numeroControl.length;
+  if (len < 4) { showToast("🔎 Faltan dígitos.", "info"); return; }
+  if (len >= 5 && len <= 7) { showToast("🔎 Debe tener 4 (auxiliar) o 8 (alumno) dígitos.", "info"); return; }
+  if (len > 8) { showToast("🔎 Te pasaste de dígitos.", "info"); return; }
+  if (password.length > 10) { showToast("🔐 La contraseña no puede superar los 10 caracteres.", "info"); return; }
 
-  if (len < 4) {
-    showToast("🔎 Faltan dígitos.", "info", 3200);
-    return;
-  }
-
-  if (len >= 5 && len <= 7) {
-    showToast("🔎 Debe tener 4 (auxiliar) o 8 (alumno) dígitos.", "info", 3500);
-    return;
-  }
-
-  if (len > 8) {
-    showToast("🔎 Te pasaste de dígitos.", "info", 3500);
-    return;
-  }
-
-  // Validar longitud de contraseña
-  if (password.length > 10) {
-    showToast("🔐 La contraseña no puede superar los 10 caracteres.", "info", 3200);
-    return;
-  }
-
-  // Petición al backend
   try {
     if (btn) btn.disabled = true;
 
@@ -164,37 +111,48 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     });
 
     if (!res.ok) {
-      showToast(`❌ Error del servidor (${res.status}).`, "error", 3500);
-      return;
+      showToast(`❌ Error del servidor (${res.status}).`, "error"); return;
     }
 
     const data = await res.json();
 
-    showToast(
-      data.message || "Operación realizada.",
-      data.success ? "success" : "error",
-      3000
-    );
+    showToast(data.message || "Operación realizada.", data.success ? "success" : "error", 2600);
 
     if (data.success) {
+      // 🔴🔴 IMPORTANTE: Guardar el usuario para que alumnos-inicial lo lea
+      // Estructura que consume alumnos-inicial.js:
+      //   LE_user.nombreCompleto  (string)
+      //   LE_user.numeroControl   (string)
+      //   LE_user.rol             ("alumno"|"auxiliar")
+      const user = {
+        nombreCompleto: data.nombre || "",
+        numeroControl : data.numeroControl || numeroControl,
+        rol           : (data.rol || "").toLowerCase()
+      };
+      try {
+        localStorage.setItem("LE_user", JSON.stringify(user));
+      } catch {}
+
+      // Limpieza suave del flujo anterior (evita arrastrar estados viejos)
+      [
+        "LE_form_ctx","LE_tmp_solicitud_vale","LE_vale_payload","LE_num_vale",
+        "SV_SEARCH_Q","SV_FLOW_ACTIVE","LE_prestamo_status","LE_prestamo_data"
+      ].forEach(k => { try { localStorage.removeItem(k); } catch {} });
+
       setTimeout(() => {
-        const rol = (data.rol || "").toLowerCase();
-        if (rol === "auxiliar") {
+        if (user.rol === "auxiliar") {
           window.location.href = "/frontend/public/Auxiliar/auxiliar.html";
-        } else if (rol === "alumno") {
+        } else if (user.rol === "alumno") {
           window.location.href = "/frontend/public/Alumnos/alumnos-inicial.html";
         } else {
-          showToast("ℹ️ Inicio de sesión correcto, pero el rol no es válido.", "info", 3200);
+          // si por alguna razón el rol no viene, lo mandamos a alumnos
+          window.location.href = "/frontend/public/Alumnos/alumnos-inicial.html";
         }
-      }, 600);
+      }, 450);
     }
   } catch (err) {
     console.error(err);
-    showToast(
-      "❌ No se pudo conectar con el servidor. Verifica tu conexión o que el backend esté activo.",
-      "error",
-      3500
-    );
+    showToast("❌ No se pudo conectar con el servidor. Verifica tu conexión o que el backend esté activo.", "error", 3500);
   } finally {
     if (btn) btn.disabled = false;
   }

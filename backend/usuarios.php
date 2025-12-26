@@ -1,7 +1,9 @@
 <?php
 /* =========================================
    API Personas (Alumnos / Auxiliares / Docentes)
-   En línea con tu HTML/CSS/JS
+   Ahora también soporta:
+   - GET ?accion=listar  -> listado unificado (para selects)
+   - GET sin parámetros  -> igual que listar
 ========================================= */
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Origin: *");
@@ -52,6 +54,69 @@ $method = $_SERVER["REQUEST_METHOD"];
 /* =========== GET =========== */
 if ($method === "GET") {
 
+  // =====================================
+  // NUEVO: accion=listar  (y sin parámetros)
+  // /backend/usuarios.php?accion=listar
+  // /backend/usuarios.php
+  // =====================================
+  $accion = $_GET["accion"] ?? null;
+  if (($accion === "listar") || (empty($_GET))) {
+
+    $usuarios = [];
+
+    // --- ALUMNOS ---
+    $resA = $conn->query("
+      SELECT 
+        'Alumno' AS rol,
+        a.numeroControl   AS numero,
+        a.nombre          AS nombre,
+        a.apellidoPaterno AS apellidoP,
+        a.apellidoMaterno AS apellidoM
+      FROM Alumnos a
+      ORDER BY a.numeroControl ASC
+    ");
+    while ($r = $resA->fetch_assoc()) {
+      // Usamos numeroControl como id numérico para el JS
+      $r["id"] = is_numeric($r["numero"]) ? (int)$r["numero"] : null;
+      $usuarios[] = $r;
+    }
+
+    // --- AUXILIARES ---
+    $resX = $conn->query("
+      SELECT 
+        'Auxiliar' AS rol,
+        x.numeroTrabajador AS numero,
+        x.nombre           AS nombre,
+        x.apellidoPaterno  AS apellidoP,
+        x.apellidoMaterno  AS apellidoM
+      FROM Auxiliares x
+      ORDER BY x.numeroTrabajador ASC
+    ");
+    while ($r = $resX->fetch_assoc()) {
+      $r["id"] = is_numeric($r["numero"]) ? (int)$r["numero"] : null;
+      $usuarios[] = $r;
+    }
+
+    // --- DOCENTES ---
+    $resD = $conn->query("
+      SELECT 
+        'Docente' AS rol,
+        d.numeroTrabajador AS numero,
+        d.nombre           AS nombre,
+        d.apellidoPaterno  AS apellidoP,
+        d.apellidoMaterno  AS apellidoM
+      FROM Docentes d
+      ORDER BY d.numeroTrabajador ASC
+    ");
+    while ($r = $resD->fetch_assoc()) {
+      $r["id"] = is_numeric($r["numero"]) ? (int)$r["numero"] : null;
+      $usuarios[] = $r;
+    }
+
+    // Devolvemos ARRAY plano (tu JS lo sabe leer)
+    out($usuarios);
+  }
+
   // Catálogo de carreras
   if (isset($_GET["carreras"])) {
     $sql = "SELECT id_Carrera, nombre FROM Carreras ORDER BY nombre ASC";
@@ -61,7 +126,7 @@ if ($method === "GET") {
     out($rows);
   }
 
-  // Listado general: alumnos + auxiliares + docentes
+  // Listado general: alumnos + auxiliares + docentes (formato original tuyo)
   if (isset($_GET["personas"])) {
     $todo = [];
 
@@ -85,7 +150,7 @@ if ($method === "GET") {
     ");
     while ($r = $resX->fetch_assoc()) $todo[] = $r;
 
-    // Docentes (ajusta nombre de tabla/campos si los tuyos difieren)
+    // Docentes
     $resD = $conn->query("
       SELECT 'Docente' AS rol,
              d.numeroTrabajador AS numero,
@@ -319,7 +384,6 @@ if ($method === "DELETE") {
 
   if ($numT !== "") {
     // El mismo endpoint te sirve para eliminar Auxiliar o Docente si compartes clave 'numeroTrabajador'
-    // (si quieres separar Docentes, crea otro branch similar apuntando a su tabla).
     $st = $conn->prepare("DELETE FROM Auxiliares WHERE numeroTrabajador=?");
     $st->bind_param("s", $numT);
     $st->execute();

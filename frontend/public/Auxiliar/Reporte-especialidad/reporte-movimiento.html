@@ -37,6 +37,16 @@
               <option value="">Todos</option>
             </select>
           </div>
+          <!-- Fecha inicial -->
+          <div class="field">
+            <label for="filtroFechaInicial">Fecha inicial</label>
+            <input type="date" id="filtroFechaInicial" class="input">
+          </div>
+          <!-- Fecha final -->
+          <div class="field">
+            <label for="filtroFechaFinal">Fecha final</label>
+            <input type="date" id="filtroFechaFinal" class="input">
+          </div>
         </div>
         <div class="filters-actions">
           <button class="btn-primary" id="btnAplicar">Aplicar filtros</button>
@@ -69,23 +79,23 @@
         <button class="btn-primary" id="btnPDF">Descargar PDF</button>
       </div>
 
-      <!-- Navegación (flecha + casa) -->
+      <!-- Navegación (flecha) -->
       <div class="nav-icons">
         <a href="Reporte-especialidad.html" id="btnBack" class="nav-icon" title="Regresar" aria-label="Regresar">
           <svg viewBox="0 0 24 24" class="svg-icon">
-            <path d="M14 7l-5 5 5 5M19 12H9" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </a>
-        <a href="../index.html" class="nav-icon" title="Inicio" aria-label="Inicio">
-          <svg viewBox="0 0 24 24" class="svg-icon">
-            <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5z" fill="currentColor"/>
+            <path d="M14 7l-5 5 5 5M19 12H9"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  fill="none"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"/>
           </svg>
         </a>
       </div>
     </div>
   </div>
 
-  <!-- Notificaciones (mismo notify que ya usas) -->
+  <!-- Notificaciones -->
   <script src="../../src/notify.js"></script>
   <!-- Lógica de esta página -->
   <script src="../../src/reporte-movimiento.js"></script>

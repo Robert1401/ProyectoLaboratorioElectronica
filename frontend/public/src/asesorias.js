@@ -1,273 +1,835 @@
-/* ============================================
-   Gestión de Asesorías (localStorage)
-   - Semilla 2025 con 1 Finalizada, 1 En curso, 2 Pendientes
-   - Estatus automático por fecha/hora
-   - Restricción: NO fechas pasadas en el formulario
-============================================ */
+/* =========================================================
+   Gestión de Asesorías (Docentes + Materias + Horario limitado)
+========================================================= */
+(() => {
+  "use strict";
 
-/* --- Usa la fecha “hoy” forzada para mantener los ejemplos estables --- */
-const FORCED_TODAY = "2025-10-21"; // pon null para usar el reloj real
+  // ---------- Config ----------
+  const API = "/backend/asesorias.php";
+  const MATERIAS_API = "/backend/materias.php";
+  const PERSONAS_API = "http://localhost:8000/backend/personas_api.php";
 
-/* ---------- Helpers de fechas ---------- */
-const pad2 = n => String(n).padStart(2, "0");
-const toISO = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-const addDays = (baseISO, n) => {
-  const d = new Date(baseISO + "T00:00:00");
-  d.setDate(d.getDate() + n);
-  return toISO(d);
-};
-const getNow = () => (FORCED_TODAY ? new Date(`${FORCED_TODAY}T12:00:00`) : new Date());
-const todayISO = () => (FORCED_TODAY ? FORCED_TODAY : toISO(new Date()));
+  const $ = (id) => document.getElementById(id);
+  const qs = (s) => document.querySelector(s);
+  const esc = (s = "") =>
+    String(s).replace(/[&<>"']/g, (m) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[
+        m
+      ])
+    );
 
-/* minutos desde 00:00 */
-function parseHHMM(str) {
-  const [h, m] = (str || "00:00").split(":").map(x => parseInt(x, 10));
-  if (Number.isNaN(h) || Number.isNaN(m)) return 0;
-  return h * 60 + m;
-}
-function nowMinutes(now = getNow()) { return now.getHours() * 60 + now.getMinutes(); }
+  // ---------- Utilidades ----------
+  const todayISO = () => {
+    const d = new Date();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${d.getFullYear()}-${mm}-${dd}`;
+  };
 
-/* Estatus por fecha/hora */
-function calcStatus({ fecha, hora }, now = getNow()) {
-  try {
+  const parseHHMM = (s) => {
+    const m = /^\s*(\d{1,2}):(\d{2})\s*$/.exec(s || "");
+    if (!m) return null;
+    const h = +m[1],
+      mi = +m[2];
+    if (h > 23 || mi > 59) return null;
+    return h * 60 + mi;
+  };
+
+  const parseRangoTxt = (txt) => {
+    const p = (txt || "").split("-");
+    if (p.length !== 2) return null;
+    const a = parseHHMM(p[0]);
+    const b = parseHHMM(p[1]);
+    if (a == null || b == null || b <= a) return null;
+    return { ini: a, fin: b };
+  };
+
+  const MAX_MIN = 16 * 60; // 16:00 como máximo (fin)
+
+  const statusFrom = (fecha, hora) => {
     const hoy = todayISO();
-    const [hIni, hFin] = (hora || "00:00 - 23:59").split("-").map(s => s.trim());
-    const minIni = parseHHMM(hIni);
-    const minFin = parseHHMM(hFin);
-    const minNow = nowMinutes(now);
-
     if (fecha < hoy) return "Finalizada";
     if (fecha > hoy) return "Pendiente";
-    // fecha === hoy
-    if (minNow < minIni) return "Pendiente";
-    if (minNow > minFin) return "Finalizada";
+    const r = parseRangoTxt(hora);
+    if (!r) return "Pendiente";
+    const now = new Date();
+    const m = now.getHours() * 60 + now.getMinutes();
+    if (m < r.ini) return "Pendiente";
+    if (m > r.fin) return "Finalizada";
     return "En curso";
-  } catch { return "Pendiente"; }
-}
+  };
 
-/* ---------- Semilla por defecto (2025) ---------- */
-function initializeDefaultSessions() {
-  const existing = localStorage.getItem("asesorias");
-  if (existing) return;
-
-  const base = todayISO();               // 2025-10-21
-  const now = getNow();
-  const hour = now.getHours();
-  const minute = now.getMinutes();
-
-  // ventana “en curso” = una hora antes a una hora después de ahora
-  const startHour = Math.max(0, hour - 1);
-  const endHour   = Math.min(23, hour + 1);
-  const horaCurso = `${pad2(startHour)}:${pad2(minute)} - ${pad2(endHour)}:${pad2(minute)}`;
-
-  const seed = [
-    // 1) FINALIZADA (19-oct-2025)
-    {
-      id: "1",
-      titulo: "Bases de Datos Relacionales",
-      auxiliar: "Ing. Ana Martínez",
-      descripcion: "Diseño y normalización de bases; consultas SQL avanzadas.",
-      fecha: "2025-10-19",
-      hora: "16:00 - 18:00",
-      cupoActual: 12,
-      cupoTotal: 12
-    },
-    // 2) EN CURSO (hoy)
-    {
-      id: "2",
-      titulo: "Análisis de Circuitos con SPICE",
-      auxiliar: "Ing. María González",
-      descripcion: "Simulación de circuitos AC/DC con SPICE.",
-      fecha: base,
-      hora: horaCurso,
-      cupoActual: 5,
-      cupoTotal: 8
-    },
-    // 3) PENDIENTE (hoy + 2)
-    {
-      id: "3",
-      titulo: "Programación en Python Avanzado",
-      auxiliar: "Ing. Carlos Ramírez",
-      descripcion: "Estructuras de datos, algoritmos y POO.",
-      fecha: addDays(base, 2),
-      hora: "10:00 - 12:00",
-      cupoActual: 3,
-      cupoTotal: 10
-    },
-    // 4) PENDIENTE (hoy + 7)
-    {
-      id: "4",
-      titulo: "Desarrollo Web con React",
-      auxiliar: "Ing. Luis Hernández",
-      descripcion: "Componentes, hooks, estado y props.",
-      fecha: addDays(base, 7),
-      hora: "15:00 - 17:00",
-      cupoActual: 7,
-      cupoTotal: 15
+  // ---------- Mini toasts ----------
+  function toast(msg, type = "info", ms = 1800) {
+    let host = $("nv-mini");
+    if (!host) {
+      host = document.createElement("div");
+      host.id = "nv-mini";
+      host.style.cssText =
+        "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);" +
+        "z-index:99999;display:flex;flex-direction:column;gap:10px;" +
+        "align-items:center;pointer-events:none";
+      document.body.appendChild(host);
     }
-  ].map(s => ({ ...s, status: calcStatus(s) }));
-
-  localStorage.setItem("asesorias", JSON.stringify(seed));
-}
-
-/* ---------- UI Helpers ---------- */
-function setDateMin(selector = "#fecha") {
-  const inp = document.querySelector(selector);
-  if (inp) {
-    inp.min = todayISO();     // bloquea días pasados en el datepicker
-    // si tenía una fecha pasada, la limpia
-    if (inp.value && inp.value < inp.min) inp.value = inp.min;
-  }
-}
-
-/* ---------- Render ---------- */
-function loadSessions() {
-  initializeDefaultSessions();
-  const sessions = JSON.parse(localStorage.getItem("asesorias") || "[]");
-  const now = getNow();
-
-  // recalcular status en cada render
-  const updated = sessions.map(s => ({ ...s, status: calcStatus(s, now) }));
-  localStorage.setItem("asesorias", JSON.stringify(updated));
-
-  const container = document.getElementById("asesoriasContainer");
-  container.innerHTML = updated.map(session => {
-    const statusClass =
-      session.status === "En curso" ? "status-en-curso" :
-      session.status === "Finalizada" ? "status-finalizada" : "status-pendiente";
-
-    return `
-      <div class="asesoria-card" data-id="${session.id}">
-        <h2 class="card-title">${session.titulo}</h2>
-        <div class="card-info">
-          <p class="info-item"><span class="icon">👨‍🏫</span><strong>Auxiliar:</strong> ${session.auxiliar}</p>
-          <p class="info-item"><span class="icon">📝</span><strong>Descripción:</strong> ${session.descripcion}</p>
-          <p class="info-item"><span class="icon">📅</span><strong>Fecha:</strong> ${session.fecha}</p>
-          <p class="info-item"><span class="icon">🕐</span><strong>Hora:</strong> ${session.hora}</p>
-          <p class="info-item"><span class="icon">👥</span><strong>Cupo:</strong> ${session.cupoActual}/${session.cupoTotal}</p>
-          <div class="status-wrapper">
-            <span class="status-badge ${statusClass}">${session.status}</span>
-          </div>
-        </div>
-        <div class="card-actions">
-          <button class="btn-edit" onclick="openEditModal('${session.id}')">✏️ Editar</button>
-          <button class="btn-view" onclick="openStudentsModal('${session.titulo}', '${session.id}')">👁️ Ver inscritos</button>
-        </div>
-      </div>`;
-  }).join("");
-}
-
-/* ---------- Modales ---------- */
-function openModal() {
-  document.getElementById("modalTitle").textContent = "Crear Nueva Asesoría";
-  document.getElementById("asesoriaId").value = "";
-  document.getElementById("titulo").value = "";
-  document.getElementById("auxiliar").value = "";
-  document.getElementById("descripcion").value = "";
-  document.getElementById("fecha").value = "";
-  document.getElementById("hora").value = "";
-  document.getElementById("cupo").value = "";
-  setDateMin("#fecha"); // fecha mínima = hoy
-  document.getElementById("modal").style.display = "flex";
-}
-
-function openEditModal(asesoriaId) {
-  const sessions = JSON.parse(localStorage.getItem("asesorias") || "[]");
-  const a = sessions.find(s => s.id === asesoriaId);
-  if (!a) return;
-
-  document.getElementById("modalTitle").textContent = "Editar Asesoría";
-  document.getElementById("asesoriaId").value = a.id;
-  document.getElementById("titulo").value = a.titulo;
-  document.getElementById("auxiliar").value = a.auxiliar;
-  document.getElementById("descripcion").value = a.descripcion;
-  document.getElementById("fecha").value = a.fecha;
-  document.getElementById("hora").value = a.hora;
-  document.getElementById("cupo").value = a.cupoTotal;
-  setDateMin("#fecha"); // aplica también en edición
-  document.getElementById("modal").style.display = "flex";
-}
-
-function closeModal() { document.getElementById("modal").style.display = "none"; }
-
-/* ---------- Guardar (crear/editar) ---------- */
-function saveAsesoria(event) {
-  event.preventDefault();
-
-  const id   = document.getElementById("asesoriaId").value;
-  const titulo = document.getElementById("titulo").value.trim();
-  const auxiliar = document.getElementById("auxiliar").value.trim();
-  const descripcion = document.getElementById("descripcion").value.trim();
-  const fecha = document.getElementById("fecha").value;
-  const hora  = document.getElementById("hora").value.trim();
-  const cupoTotal = parseInt(document.getElementById("cupo").value, 10);
-
-  // bloquear fechas pasadas
-  const min = todayISO();
-  if (!fecha || fecha < min) {
-    alert("La fecha no puede ser anterior a hoy.");
-    setDateMin("#fecha");
-    return;
+    const card = document.createElement("div");
+    card.style.cssText =
+      "pointer-events:auto;max-width:520px;color:#fff;border-radius:12px;" +
+      "padding:10px 14px;font-weight:700;box-shadow:0 10px 26px rgba(0,0,0,.35)";
+    card.style.background =
+      type === "success"
+        ? "#065f46"
+        : type === "error"
+        ? "#991b1b"
+        : type === "warn"
+        ? "#92400e"
+        : "#1f2937";
+    card.textContent = msg;
+    host.appendChild(card);
+    setTimeout(() => card.remove(), ms);
   }
 
-  let sessions = JSON.parse(localStorage.getItem("asesorias") || "[]");
-  const base = { titulo, auxiliar, descripcion, fecha, hora, cupoTotal };
-  const status = calcStatus(base);
+  // ---------- Fetch helper ----------
+  async function jfetch(url, options = {}) {
+    const res = await fetch(url, {
+      headers: { "Content-Type": "application/json" },
+      ...options,
+    });
+    let data = null;
+    try {
+      data = await res.json();
+    } catch {
+      /* ignore */
+    }
+    if (!res.ok || !data || data.ok === false)
+      throw new Error((data && data.error) || `HTTP ${res.status}`);
+    // si viene {ok:true,data:[...]} regresamos .data
+    return data.data != null ? data.data : data;
+  }
 
-  if (id) {
-    const idx = sessions.findIndex(s => s.id === id);
-    if (idx !== -1) sessions[idx] = { ...sessions[idx], ...base, status };
-  } else {
-    sessions.push({
-      id: Date.now().toString(),
-      ...base,
-      cupoActual: 0,
-      status
+  // ========================================================
+  //   PERSONAS (DOCENTES + ALUMNOS)
+  // ========================================================
+  let PROFESORES = [];
+  let PROF_MAP = {}; // id_Profesor -> nombreCompleto
+  let ALUMNOS = [];
+  let ALUM_MAP = {}; // no_control -> nombreCompleto
+
+  async function apiProfesores() {
+    try {
+      const res = await fetch(`${PERSONAS_API}?action=list`);
+      const data = await res.json();
+      const personas = (data && data.data) ? data.data : [];
+
+      const docentes = [];
+      const alumnos = [];
+
+      personas.forEach((p, idx) => {
+        const tipo = String(p.tipo || "").toLowerCase();
+        const id = String(
+          p.numeroControl || p.no_control || p.noControl || idx + 1
+        );
+        const nombreCompleto = [p.nombre, p.apellidoPaterno, p.apellidoMaterno]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+
+        if (tipo === "docente") {
+          docentes.push({ id_Profesor: id, nombreCompleto });
+          if (id) PROF_MAP[id] = nombreCompleto;
+        } else if (tipo === "alumno" || tipo === "estudiante") {
+          alumnos.push({ no_control: id, nombreCompleto });
+          if (id) ALUM_MAP[id] = nombreCompleto;
+        }
+      });
+
+      docentes.sort((a, b) =>
+        String(a.nombreCompleto).localeCompare(String(b.nombreCompleto), "es", {
+          sensitivity: "base",
+        })
+      );
+
+      ALUMNOS = alumnos;
+
+      return docentes;
+    } catch (e) {
+      console.error("Error cargando personas desde PERSONAS_API", e);
+      return [];
+    }
+  }
+
+  async function loadProfesores() {
+    PROFESORES = await apiProfesores();
+    // PROF_MAP y ALUM_MAP ya se cargan dentro de apiProfesores()
+  }
+
+  // ========================================================
+  //   API ASESORÍAS
+  // ========================================================
+
+  async function apiList() {
+    const arr = await jfetch(API);
+    return (arr || []).map((x) => {
+      const id_profe = String(x.id_profesor || x.id_Profesor || "");
+      const backendName = x.docenteNombre || x.docente || "";
+      const docenteNombre = backendName || PROF_MAP[id_profe] || "";
+
+      const auxiliarNombre =
+        x.auxiliarNombre || x.auxiliar || docenteNombre || "";
+
+      return {
+        id: String(x.id),
+        titulo: x.titulo,
+        id_profesor: id_profe,
+        docenteNombre,
+        auxiliarNombre,
+        descripcion: x.descripcion || "",
+        fecha: x.fecha,
+        hora: x.hora,
+        cupoTotal: Number(x.cupo_total ?? x.cupoTotal ?? x.cupo ?? 0),
+        cupoActual: Number(x.cupo_actual ?? x.cupoActual ?? 0),
+        status: statusFrom(x.fecha, x.hora),
+      };
     });
   }
 
-  localStorage.setItem("asesorias", JSON.stringify(sessions));
-  alert("Asesoría guardada exitosamente");
-  closeModal();
-  loadSessions();
-}
+  async function apiCreate(p) {
+    await jfetch(API, { method: "POST", body: JSON.stringify(p) });
+  }
+  async function apiUpdate(p) {
+    await jfetch(API, { method: "PUT", body: JSON.stringify(p) });
+  }
+  async function apiDelete(id) {
+    await jfetch(`${API}?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+  }
 
-/* ---------- Modal alumnos (mock) ---------- */
-function openStudentsModal(asesoriaTitle, asesoriaId) {
-  const modal = document.getElementById("studentsModal");
-  const title = document.getElementById("studentsModalTitle");
-  const list = document.getElementById("studentsList");
+  // ---------- API Materias ----------
+  async function apiMaterias() {
+    const res = await fetch(MATERIAS_API, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    const data = await res.json();
+    if (!Array.isArray(data)) return [];
 
-  title.textContent = `Alumnos Inscritos - ${asesoriaTitle}`;
+    return data
+      .filter((m) => m.id_Estado == null || Number(m.id_Estado) === 1)
+      .map((m) => ({
+        id: Number(m.id_Materia ?? m.id ?? 0),
+        nombre: String(m.materia ?? m.nombre ?? "").trim(),
+      }))
+      .filter((m) => m.nombre.length);
+  }
 
-  const mockStudents = [
-    { numeroControl: "20400751", nombre: "Juan Carlos Pérez García" },
-    { numeroControl: "20400752", nombre: "María Fernanda López Martínez" },
-    { numeroControl: "20400753", nombre: "Luis Alberto Rodríguez Sánchez" }
-  ];
+  // ========================================================
+  //   Render listado
+  // ========================================================
 
-  list.innerHTML = mockStudents.map((s, i) => `
-    <div class="student-item">
-      <span class="student-number">${i + 1}</span>
-      <div class="student-info">
-        <p class="student-control"><strong>N. Control:</strong> ${s.numeroControl}</p>
-        <p class="student-name"><strong>Nombre:</strong> ${s.nombre}</p>
-      </div>
-    </div>`).join("");
+  async function render() {
+    try {
+      const list = await apiList();
+      renderList(list);
+    } catch (e) {
+      console.error(e);
+      renderList([]);
+      toast("No se pudo cargar la lista.", "error");
+    }
+  }
 
-  modal.style.display = "flex";
-}
-function closeStudentsModal(){ document.getElementById("studentsModal").style.display = "none"; }
-window.onclick = function(e){
-  const m1 = document.getElementById("modal");
-  const m2 = document.getElementById("studentsModal");
-  if (e.target === m1) closeModal();
-  if (e.target === m2) closeStudentsModal();
-};
+  function renderList(list) {
+    const cont = $("asesoriasContainer");
+    if (!cont) return;
 
-/* ---------- Boot ---------- */
-document.addEventListener("DOMContentLoaded", () => {
-  loadSessions();
-  // por si el input de fecha existe en el DOM desde inicio (algunos navegadores), fija min:
-  setDateMin("#fecha");
-});
+    if (!list.length) {
+      cont.innerHTML = `
+        <div class="empty-wrap">
+          <div class="empty-icon" aria-hidden="true">📚</div>
+          <div class="empty-title">No hay asesorías</div>
+          <div class="empty-sub">Crea una nueva asesoría con el botón de arriba.</div>
+        </div>`;
+      return;
+    }
+
+    const ordered = [...list].sort((a, b) => {
+      const score = (s) =>
+        s.status === "En curso" ? 0 : s.status === "Pendiente" ? 1 : 2;
+      const ra = score(a),
+        rb = score(b);
+      if (ra !== rb) return ra - rb;
+      if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
+      return a.titulo.localeCompare(b.titulo);
+    });
+
+    cont.innerHTML = ordered
+      .map((s) => {
+        const badge =
+          s.status === "En curso"
+            ? "status-en-curso"
+            : s.status === "Pendiente"
+            ? "status-pendiente"
+            : "status-finalizada";
+        return `
+        <div class="asesoria-card" data-id="${s.id}">
+          <h2 class="card-title">${esc(s.titulo)}</h2>
+          <div class="card-info">
+            <p class="info-item">
+              <span class="icon">👨‍🏫</span>
+              <strong>Docente:</strong> ${esc(s.docenteNombre || "—")}
+            </p>
+            <p class="info-item">
+              <span class="icon">📝</span>
+              <strong>Descripción:</strong> ${esc(s.descripcion)}
+            </p>
+            <p class="info-item">
+              <span class="icon">📅</span>
+              <strong>Fecha:</strong> ${esc(s.fecha)}
+            </p>
+            <p class="info-item">
+              <span class="icon">🕐</span>
+              <strong>Hora:</strong> ${esc(s.hora)}
+            </p>
+            <p class="info-item">
+              <span class="icon">👥</span>
+              <strong>Cupo:</strong> ${s.cupoActual}/${s.cupoTotal}
+            </p>
+            <div class="status-wrapper">
+              <span class="status-badge ${badge}">${s.status.toUpperCase()}</span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="btn-edit"   data-act="edit"   data-id="${s.id}">✏️ Editar</button>
+            <button class="btn-view"
+                    data-act="view"
+                    data-id="${s.id}"
+                    data-title="${esc(s.titulo)}"
+                    data-cupo-actual="${s.cupoActual}"
+                    data-cupo-total="${s.cupoTotal}">
+              👁️ Ver inscritos
+            </button>
+            <button class="btn-delete"
+                    data-act="delete"
+                    data-id="${s.id}"
+                    data-title="${esc(s.titulo)}">
+              🗑️ Eliminar
+            </button>
+          </div>
+        </div>`;
+      })
+      .join("");
+
+    cont
+      .querySelectorAll("[data-act='edit']")
+      .forEach((b) => (b.onclick = () => openEditModal(b.dataset.id)));
+    cont
+      .querySelectorAll("[data-act='delete']")
+      .forEach(
+        (b) => (b.onclick = () => openDelete(b.dataset.id, b.dataset.title))
+      );
+    cont
+      .querySelectorAll("[data-act='view']")
+      .forEach((b) => {
+        b.onclick = () =>
+          openStudentsModal(
+            b.dataset.id,
+            b.dataset.title,
+            Number(b.dataset.cupoActual),
+            Number(b.dataset.cupoTotal)
+          );
+      });
+  }
+
+  // ========================================================
+  //   Docentes / Materias (selects del modal)
+  // ========================================================
+
+  async function fillDocentes(selected = null) {
+    const sel = $("docente");
+    if (!sel) return;
+    sel.disabled = true;
+    sel.innerHTML = `<option value="">Cargando…</option>`;
+    try {
+      const list = PROFESORES.length ? PROFESORES : await apiProfesores();
+      sel.innerHTML =
+        `<option value="">— Selecciona —</option>` +
+        list
+          .map(
+            (p) =>
+              `<option value="${esc(p.id_Profesor)}">${esc(
+                p.nombreCompleto
+              )}</option>`
+          )
+          .join("");
+      if (selected) sel.value = String(selected);
+    } catch (e) {
+      console.error(e);
+      sel.innerHTML = `<option value="">(Sin docentes)</option>`;
+    } finally {
+      sel.disabled = false;
+    }
+  }
+
+  async function fillMaterias(selectedText = null) {
+    const sel = $("materia");
+    if (!sel) return;
+    sel.disabled = true;
+    sel.innerHTML = `<option value="">Cargando…</option>`;
+    try {
+      const list = await apiMaterias();
+      sel.innerHTML =
+        `<option value="">— Selecciona materia —</option>` +
+        list
+          .map(
+            (m) =>
+              `<option value="${esc(m.nombre)}">${esc(m.nombre)}</option>`
+          )
+          .join("");
+      if (selectedText) sel.value = selectedText;
+    } catch {
+      sel.innerHTML = `<option value="">(Sin materias)</option>`;
+    } finally {
+      sel.disabled = false;
+    }
+  }
+
+  // ========================================================
+  //   Validación de formulario
+  // ========================================================
+
+  function isFormValid() {
+    const materiaSel = $("materia");
+    const titulo = materiaSel
+      ? (materiaSel.value || "").trim()
+      : (($("titulo")?.value) || "").trim();
+    const idProf = ($("docente")?.value || "").trim();
+    const desc = ($("descripcion")?.value || "").trim();
+    const fecha = ($("fecha")?.value || "").trim();
+
+    let horaTxt = "";
+    if ($("horaIni") && $("horaFin")) {
+      const ini = $("horaIni").value;
+      const fin = $("horaFin").value;
+      horaTxt = `${ini} - ${fin}`;
+    } else if ($("hora")) {
+      horaTxt = ($("hora").value || "").trim();
+    }
+
+    const rango = parseRangoTxt(horaTxt);
+    const cupo = parseInt(($("cupo")?.value || "").trim(), 10);
+
+    const fechaOk = fecha && fecha >= todayISO();
+    const rangoOk = !!rango && rango.fin <= MAX_MIN;
+    const cupoOk = Number.isInteger(cupo) && cupo >= 1 && cupo <= 50;
+
+    return !!(titulo && idProf && desc && fechaOk && rangoOk && cupoOk);
+  }
+
+  function updateButtonsState() {
+    const form = qs(".modal-form");
+    if (!form) return;
+    const btnGuardar = form.querySelector("[type='submit']");
+    const btnCancelar = form.querySelector(".btn-cancel");
+    const ok = isFormValid();
+
+    [btnGuardar, btnCancelar].forEach((btn) => {
+      if (!btn) return;
+      btn.disabled = !ok;
+      btn.classList.toggle("btn-disabled", !ok);
+    });
+  }
+
+  function wireFormValidation() {
+    const ids = [
+      "materia",
+      "titulo",
+      "docente",
+      "descripcion",
+      "fecha",
+      "horaIni",
+      "horaFin",
+      "hora",
+      "cupo",
+    ];
+    ids.forEach((id) => {
+      const el = $(id);
+      if (!el) return;
+      el.addEventListener("input", updateButtonsState);
+      el.addEventListener("change", updateButtonsState);
+    });
+  }
+
+  // ========================================================
+  //   Horario
+  // ========================================================
+
+  let timeBuilt = false;
+  function buildTimeOptions() {
+    const ini = $("horaIni"),
+      fin = $("horaFin");
+    if (!ini || !fin || timeBuilt) return;
+    timeBuilt = true;
+    const parts = [];
+    for (let m = 7 * 60; m <= MAX_MIN; m += 30) {
+      const h = String(Math.floor(m / 60)).padStart(2, "0");
+      const mi = String(m % 60).padStart(2, "0");
+      parts.push(`${h}:${mi}`);
+    }
+    ini.innerHTML = parts
+      .slice(0, -1)
+      .map((v) => `<option value="${v}">${v}</option>`)
+      .join("");
+    fin.innerHTML = parts
+      .map((v) => `<option value="${v}">${v}</option>`)
+      .join("");
+
+    ini.addEventListener("change", () => {
+      const start = parseHHMM(ini.value) || 0;
+      [...fin.options].forEach((o) => {
+        o.disabled = parseHHMM(o.value) <= start;
+      });
+      if (parseHHMM(fin.value) <= start)
+        fin.value = parts.find((v) => parseHHMM(v) > start) || "16:00";
+      updateButtonsState();
+    });
+
+    fin.addEventListener("change", () => {
+      if (parseHHMM(fin.value) > MAX_MIN) {
+        fin.value = "16:00";
+      }
+      updateButtonsState();
+    });
+
+    ini.value = "14:00";
+    fin.value = "16:00";
+    ini.dispatchEvent(new Event("change"));
+  }
+
+  // ========================================================
+  //   Modal crear / editar
+  // ========================================================
+
+  function openModalEmpty() {
+    $("modalTitle").textContent = "Crear Nueva Asesoría";
+    $("asesoriaId").value = "";
+    const txtTitulo = $("titulo");
+    if (txtTitulo) txtTitulo.value = "";
+    const selMateria = $("materia");
+    if (selMateria) selMateria.value = "";
+    $("descripcion").value = "";
+    $("fecha").value = "";
+    if ($("horaIni") && $("horaFin")) {
+      $("horaIni").value = "14:00";
+      $("horaFin").value = "16:00";
+    } else if ($("hora")) {
+      $("hora").value = "14:00 - 16:00";
+    }
+    $("cupo").value = "";
+    const m = $("modal");
+    if (!m) return;
+    m.style.display = "flex";
+    m.setAttribute("aria-hidden", "false");
+    updateButtonsState();
+  }
+
+  function closeModal() {
+    const m = $("modal");
+    if (!m) return;
+    m.style.display = "none";
+    m.setAttribute("aria-hidden", "true");
+  }
+
+  function wireModalClose() {
+    const m = $("modal");
+    if (!m) return;
+    m.addEventListener("mousedown", (e) => {
+      if (e.target === m) closeModal();
+    });
+    document.addEventListener("click", (e) => {
+      const el = e.target;
+      if (el.closest(".modal-close") || el.closest(".btn-cancel")) {
+        e.preventDefault();
+        closeModal();
+      }
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        if (getComputedStyle(m).display !== "none") closeModal();
+      }
+    });
+  }
+
+  // ---------- Guardar ----------
+  async function save(ev) {
+    ev.preventDefault();
+
+    const id = $("asesoriaId").value.trim();
+    const materiaSel = $("materia");
+    const titulo = materiaSel
+      ? (materiaSel.value || "").trim()
+      : (($("titulo")?.value) || "").trim();
+    const idProf = $("docente").value.trim();
+    const desc = $("descripcion").value.trim();
+    const fecha = $("fecha").value;
+
+    let horaTxt = "";
+    if ($("horaIni") && $("horaFin")) {
+      const ini = $("horaIni").value;
+      const fin = $("horaFin").value;
+      horaTxt = `${ini} - ${fin}`;
+    } else {
+      horaTxt = ($("hora")?.value || "").trim();
+    }
+
+    const cupo = parseInt($("cupo").value, 10);
+
+    if (!titulo) {
+      toast("Selecciona la materia (título).", "error");
+      return;
+    }
+    if (!idProf || !desc) {
+      toast("Completa docente y descripción.", "error");
+      return;
+    }
+    if (!fecha || fecha < todayISO()) {
+      toast("Selecciona una fecha válida (hoy o futuro).", "error");
+      $("fecha").min = todayISO();
+      return;
+    }
+
+    const rango = parseRangoTxt(horaTxt);
+    if (!rango) {
+      toast("Hora inválida. Usa HH:MM - HH:MM (fin > inicio).", "error");
+      return;
+    }
+    if (rango.fin > MAX_MIN) {
+      toast("No se aceptan asesorías después de las 16:00.", "error");
+      return;
+    }
+    if (!(Number.isInteger(cupo) && cupo >= 1 && cupo <= 50)) {
+      toast("Cupo total 1..50.", "error");
+      return;
+    }
+
+    const payload = {
+      id: id || undefined,
+      titulo,
+      id_profesor: Number(idProf),
+      descripcion: desc,
+      fecha,
+      hora: horaTxt,
+      cupoTotal: cupo,
+      cupoActual: 0,
+      auxiliar: 0,
+    };
+
+    try {
+      if (id) await apiUpdate(payload);
+      else await apiCreate(payload);
+      toast("Asesoría guardada.", "success");
+      closeModal();
+      render();
+    } catch (e) {
+      toast(e.message || "No se pudo guardar.", "error");
+    }
+  }
+
+  // ---------- Editar ----------
+  async function openEditModal(id) {
+    try {
+      const list = await apiList();
+      const s = list.find((x) => x.id === String(id));
+      if (!s) return;
+
+      await Promise.all([
+        fillDocentes(s.id_profesor),
+        fillMaterias(s.titulo),
+      ]);
+
+      $("modalTitle").textContent = "Editar Asesoría";
+      $("asesoriaId").value = s.id;
+
+      if ($("materia")) $("materia").value = s.titulo;
+      if ($("titulo")) $("titulo").value = s.titulo;
+
+      $("descripcion").value = s.descripcion;
+      $("fecha").value = s.fecha;
+
+      if ($("horaIni") && $("horaFin")) {
+        const r = parseRangoTxt(s.hora);
+        if (r) {
+          const hh = (m) =>
+            `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(
+              m % 60
+            ).padStart(2, "0")}`;
+          $("horaIni").value = hh(r.ini);
+          $("horaFin").value = hh(r.fin);
+          $("horaIni").dispatchEvent(new Event("change"));
+        }
+      } else if ($("hora")) {
+        $("hora").value = s.hora;
+      }
+
+      $("cupo").value = s.cupoTotal;
+
+      const m = $("modal");
+      m.style.display = "flex";
+      m.setAttribute("aria-hidden", "false");
+      updateButtonsState();
+    } catch {
+      toast("No se pudo abrir la edición.", "error");
+    }
+  }
+  window.openEditModal = openEditModal;
+
+  // ---------- Eliminar ----------
+  async function openDelete(id, title) {
+    if (!confirm(`¿Seguro que deseas eliminar la asesoría "${title}"?`)) return;
+    try {
+      await apiDelete(id);
+      toast("Eliminada.", "success");
+      render();
+    } catch {
+      toast("No se pudo eliminar.", "error");
+    }
+  }
+  window.openDeleteModal = openDelete;
+
+  // ========================================================
+  //   Ver alumnos inscritos
+  // ========================================================
+
+  async function openStudentsModal(idAsesoria, titulo = "", cupoActual = 0, cupoTotal = 0) {
+    const m = $("studentsModal");
+    const title = $("studentsModalTitle");
+    const listNode = $("studentsList");
+
+    if (!m || !title || !listNode) {
+      console.warn("Modal de alumnos no encontrado en el HTML.");
+      return;
+    }
+
+    title.textContent = titulo
+      ? `Alumnos inscritos – ${titulo}`
+      : "Alumnos inscritos";
+
+    listNode.innerHTML =
+      `<div class="student-item"><div>Cargando lista…</div></div>`;
+    m.style.display = "flex";
+    m.setAttribute("aria-hidden", "false");
+
+    try {
+      const data = await jfetch(
+        `${API}?action=inscritos&id_asesoria=${encodeURIComponent(idAsesoria)}`
+      );
+      const rows = Array.isArray(data) ? data : [];
+
+      if (!rows.length) {
+        title.textContent = titulo
+          ? `Alumnos inscritos – ${titulo} (0/${cupoTotal || "?"})`
+          : `Alumnos inscritos (0/${cupoTotal || "?"})`;
+        listNode.innerHTML =
+          `<div class="student-item"><div>Sin alumnos inscritos todavía.</div></div>`;
+        return;
+      }
+
+      const inscritos = rows.length;
+      const totalStr = cupoTotal ? ` / ${cupoTotal}` : "";
+      const llenoStr =
+        cupoTotal && inscritos >= cupoTotal ? " – CUPO LLENO" : "";
+
+      title.textContent = titulo
+        ? `Alumnos inscritos – ${titulo} (${inscritos}${totalStr})${llenoStr}`
+        : `Alumnos inscritos (${inscritos}${totalStr})${llenoStr}`;
+
+      listNode.innerHTML = rows
+        .map((alum) => {
+          const nc =
+            alum.no_control ||
+            alum.noControl ||
+            alum.numeroControl ||
+            alum.nocontrol ||
+            "—";
+
+          const baseNombre =
+            alum.nombreCompleto || alum.nombre || alum.nombre_alumno || "";
+          const apP =
+            alum.apellidoPaterno || alum.apellido_paterno || alum.apellido || "";
+          const apM =
+            alum.apellidoMaterno || alum.apellido_materno || "";
+
+          let nombreFull = [baseNombre, apP, apM]
+            .filter(Boolean)
+            .join(" ")
+            .trim();
+
+          let nombre = nombreFull || baseNombre || "—";
+
+          // 🔴 AQUÍ forzamos el nombre COMPLETO usando PERSONAS_API si existe
+          const idAlumno = String(nc);
+          if (ALUM_MAP[idAlumno]) {
+            nombre = ALUM_MAP[idAlumno]; // nombre completo desde personas_api
+          }
+
+          const correo = alum.correo || alum.email || alum.correoInstitucional || "";
+
+          return `
+          <div class="student-item">
+            <div class="student-main">
+              <strong>${esc(nombre)}</strong>
+              <span class="student-nc">(${esc(nc)})</span>
+            </div>
+            ${
+              correo
+                ? `<div class="student-mail">${esc(correo)}</div>`
+                : ""
+            }
+          </div>`;
+        })
+        .join("");
+    } catch (e) {
+      console.error(e);
+      listNode.innerHTML = `
+        <div class="student-item">
+          <div>Error al cargar la lista de alumnos inscritos.</div>
+        </div>`;
+    }
+
+    m.onclick = (e) => {
+      if (e.target === m) closeStudentsModal();
+    };
+  }
+  window.openStudentsModal = openStudentsModal;
+
+  function closeStudentsModal() {
+    const m = $("studentsModal");
+    if (!m) return;
+    m.style.display = "none";
+    m.setAttribute("aria-hidden", "true");
+  }
+  window.closeStudentsModal = closeStudentsModal;
+
+  // ========================================================
+  //   Abrir modal crear
+  // ========================================================
+
+  window.openModal = async function () {
+    await Promise.all([fillDocentes(), fillMaterias()]);
+    buildTimeOptions();
+    openModalEmpty();
+  };
+
+  // ========================================================
+  //   Init
+  // ========================================================
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    await loadProfesores(); // carga docentes y alumnos (PROF_MAP y ALUM_MAP)
+    render();
+
+    if ($("fecha")) $("fecha").min = todayISO();
+    const form = qs(".modal-form");
+    if (form) form.addEventListener("submit", save);
+    wireModalClose();
+    buildTimeOptions();
+    wireFormValidation();
+    updateButtonsState();
+  });
+})();

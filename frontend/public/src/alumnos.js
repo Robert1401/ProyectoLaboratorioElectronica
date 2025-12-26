@@ -4,7 +4,7 @@
   // Rutas (ajústalas a tu estructura)
   // ------------------------------
   const ROUTES = {
-    solicitud:  "solicitud-materiales.html",
+    solicitud:  "../Solicitud de Material/solicitud-materiales.html",
     devolucion: "devolucion.html",
     asesorias:  "asesorias.html",
     home:       "../index.html"

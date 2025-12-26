@@ -23,9 +23,20 @@
 
     <form id="registroForm">
   <div class="input-container">
-    <i class="fa fa-id-card"></i>
-    <input type="text" id="numeroControl" placeholder="Número de Control" required>
-  </div>
+  <i class="fa fa-id-card"></i>
+  <input
+    type="text"
+    id="numeroControl"
+    placeholder="Número de Control"
+    inputmode="numeric"
+    maxlength="8"
+    pattern="\d{8}"
+    autocomplete="off"
+    required
+  >
+</div>
+<small id="nc-help" class="hint"></small>
+
 
   <div class="input-container">
     <i class="fa fa-user"></i>
@@ -52,12 +63,12 @@
 
   <div class="input-container">
     <i class="fa fa-lock"></i>
-    <input type="password" id="clave" placeholder="Contraseña" maxlength="60" required>
+   <input type="password" id="clave" placeholder="Contraseña" maxlength="10" required>
   </div>
 
   <div class="input-container">
     <i class="fa fa-lock"></i>
-    <input type="password" id="confirmarClave" placeholder="Confirmar Contraseña" maxlength="60" required>
+    <input type="password" id="confirmarClave" placeholder="Confirmar Contraseña" maxlength="10" required>
   </div>
 
   <button type="submit" class="btn-submit">Registrarse</button>

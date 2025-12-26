@@ -1,212 +1,265 @@
-// compras.js — Ticket (HOY / TODAS) sin “realizado” y con avisos centrados bonitos
+"use strict";
 
+/* ===================== LocalStorage keys ===================== */
 const LS = {
-  materiales: 'LE_materiales',
-  compras: 'LE_compras',
-  pendientes: 'LE_carrito_pend',
-  auxiliar: 'auxiliarNombre',
+  compras:    "LE_compras",
+  pendientes: "LE_carrito_pend",
+  auxiliar:   "auxiliarNombre",
 };
 
-const getMats = () => JSON.parse(localStorage.getItem(LS.materiales) || '[]');
-const getCompras = () => JSON.parse(localStorage.getItem(LS.compras) || '[]');
-const getPend = () => JSON.parse(localStorage.getItem(LS.pendientes) || '[]');
-const getAux = () =>
-  localStorage.getItem(LS.auxiliar) || 'Juan Vázquez Rodríguez';
+const getComprasLocal = () => {
+  try { return JSON.parse(localStorage.getItem(LS.compras) || "[]"); }
+  catch { return []; }
+};
+const getPendLocal = () => {
+  try { return JSON.parse(localStorage.getItem(LS.pendientes) || "[]"); }
+  catch { return []; }
+};
+const getAuxLocal = () => localStorage.getItem(LS.auxiliar) || "—";
 
-function todayISO() {
-  const d = new Date();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${mm}-${dd}`;
+/* ===================== Utils básicas ===================== */
+const iso = (s) => (s || "").slice(0, 10);
+function isoToDMY(isoDate){
+  if(!isoDate) return "";
+  const [y,m,d] = isoDate.split("-");
+  return `${d}/${m}/${y}`;
+}
+function notifyInline(msg){
+  const tb = document.getElementById("tbodyRecibo");
+  if (!tb) return;
+  tb.innerHTML = `<tr><td colspan="3" class="empty">${msg}</td></tr>`;
 }
 
-/* ===============================
-   Avisos bonitos al centro
-   =============================== */
-function ensureNotifyDOM() {
-  if (document.getElementById('notify-layer')) return;
-  const el = document.createElement('div');
-  el.id = 'notify-layer';
-  el.innerHTML = `
-  <style>
-    #notify-layer{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;z-index:10000;}
-    .nv-wrap{min-width:280px;max-width:520px;opacity:0;transform:translateY(10px) scale(.98);
-             transition:opacity .22s ease, transform .22s ease; pointer-events:auto;}
-    .nv-card{border-radius:16px; padding:14px 16px; box-shadow:0 18px 48px rgba(0,0,0,.28);
-             color:#fff; font-family:system-ui,Segoe UI,Roboto,Arial;}
-    .nv-ok   {background:#065f46;}   /* verde */
-    .nv-info {background:#1f2937;}   /* gris oscuro */
-    .nv-err  {background:#991b1b;}   /* rojo */
-    .nv-title{font-weight:700; margin:0 0 4px; font-size:14px; letter-spacing:.2px;}
-    .nv-msg  {margin:0; opacity:.95; font-size:14px;}
-    .nv-show {opacity:1; transform:translateY(0) scale(1);}
-    .nv-close{margin-top:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);
-              color:#fff;padding:6px 10px;border-radius:10px;font-size:12px;cursor:pointer;}
-    .nv-close:hover{filter:brightness(1.1)}
-  </style>
-  <div class="nv-wrap">
-    <div class="nv-card nv-info">
-      <div class="nv-title">Aviso</div>
-      <p class="nv-msg">...</p>
-      <button class="nv-close" type="button">Cerrar</button>
-    </div>
-  </div>`;
-  document.body.appendChild(el);
-  el.querySelector('.nv-close').addEventListener('click', () => {
-    el.querySelector('.nv-wrap').classList.remove('nv-show');
-  });
+/* ===================== Catálogo/alias + política (igual a compra_detalle) ===================== */
+function looksGenericName(name=""){
+  const s = String(name).trim().toLowerCase();
+  if (!s) return true;
+  if (s === "(sin nombre)") return true;
+  if (/^material\s*#\d+$/i.test(name)) return true;
+  if (/^id\s*\d+$/i.test(name)) return true;
+  return false;
 }
 
-function notify(msg, type = 'info', title) {
-  ensureNotifyDOM();
-  const wrap = document.querySelector('#notify-layer .nv-wrap');
-  const card = document.querySelector('#notify-layer .nv-card');
-  const ttl  = document.querySelector('#notify-layer .nv-title');
-  const pmsg = document.querySelector('#notify-layer .nv-msg');
-
-  card.className = `nv-card nv-${type === 'success' ? 'ok' : type === 'error' ? 'err' : 'info'}`;
-  ttl.textContent = title || (type === 'success' ? 'Éxito' : type === 'error' ? 'Error' : 'Aviso');
-  pmsg.textContent = msg;
-
-  wrap.classList.add('nv-show');
-  clearTimeout(notify._t);
-  notify._t = setTimeout(() => wrap.classList.remove('nv-show'), 1700);
-}
-
-/* ===============================
-   Unir COMPRAS guardadas + PENDIENTES por fecha
-   =============================== */
-function buildData() {
-  const comprasRaw = getCompras()
-    .slice()
-    .map((c) => ({
-      tipo: 'compra',                        // guardado
-      id_compra: c.id_compra,
-      fechaISO: (c.fecha || '').slice(0, 10),
-      items: (c.items || []).map((it) => ({
-        id_Material: it.id_Material,
-        cantidad: it.cantidad,
-      })),
-    }));
-
-  // Pendientes agrupadas por fecha
-  const pend = getPend();
-  const byDate = new Map();
-  for (const p of pend) {
-    const f = p.fechaISO;
-    if (!byDate.has(f)) byDate.set(f, []);
-    byDate.get(f).push({ id_Material: p.id_Material, cantidad: p.cantidad });
+// Índice de materiales desde LE_materiales
+const MAT_INDEX = new Map();   // id (string) -> nombre
+(function buildMatIndex(){
+  let mats = [];
+  try { mats = JSON.parse(localStorage.getItem("LE_materiales") || "[]"); } catch { mats = []; }
+  for (const m of (mats || [])) {
+    const id = String(m.id_Material ?? m.id ?? m.ID ?? m.id_material ?? "").trim();
+    if (!id) continue;
+    const nombre = m.nombre ?? m.Nombre ?? m.descripcion ?? m.Descripcion ?? m.material ?? m.Material ?? "";
+    if (nombre) MAT_INDEX.set(id, nombre);
   }
-  const pendBlocks = Array.from(byDate.entries()).map(([fechaISO, items]) => ({
-    tipo: 'pend',                             // visualiza como parte del ticket (sin texto "pendiente")
-    id_compra: '—',
-    fechaISO,
-    items,
-  }));
+})();
 
-  // Orden: fecha DESC; en misma fecha, compras primero
-  return comprasRaw.concat(pendBlocks).sort((a, b) => {
-    if (a.fechaISO !== b.fechaISO) return b.fechaISO.localeCompare(a.fechaISO);
-    if (a.tipo !== b.tipo) return a.tipo === 'compra' ? -1 : 1;
-    if (a.tipo === 'compra' && b.tipo === 'compra') return b.id_compra - a.id_compra;
-    return 0;
-  });
+// Alias manuales (extiende estos si identificas más)
+const NAME_ALIAS = {
+  1:    "Resistor 220Ω",
+  2:    "Capacitor Electrolítico 10µF",
+  3:    "Protoboard 830 puntos",
+  1004: "Cable Dupont M-M (paquete 40)",
+  // 21:   "Cable jumper M-H (paquete 20)",
+};
+
+// Si es true, descarta (no cuenta ni muestra) los materiales sin nombre real
+const FORCE_DROP_UNKNOWN = true;
+
+function resolveMaterialName(id, nombreOriginal){
+  const idStr = String(id ?? "").trim();
+
+  // Catálogo local
+  if (idStr && MAT_INDEX.has(idStr)) {
+    const n = MAT_INDEX.get(idStr);
+    if (n && !looksGenericName(n)) return n;
+  }
+  // Alias manual
+  const idNum = Number(idStr);
+  if (Number.isFinite(idNum) && NAME_ALIAS[idNum]) return NAME_ALIAS[idNum];
+
+  // Nombre que venga en la compra (si sirve)
+  if (nombreOriginal && !looksGenericName(nombreOriginal)) return nombreOriginal;
+
+  // Política
+  if (FORCE_DROP_UNKNOWN) return null;
+
+  return "Material sin catálogo";
 }
 
-/* ===============================
-   Render del ticket
-   =============================== */
-function renderRecibo({ modo = 'hoy' } = {}) {
-  const mats = getMats();
-  const aux  = getAux();
-
-  const tbody      = document.getElementById('tbodyRecibo');
-  const fechaMeta  = document.getElementById('fechaMeta');
-  const auxInfo    = document.getElementById('auxInfo');
-  const totalesInfo= document.getElementById('totalesInfo');
-
-  auxInfo.textContent = `Auxiliar: ${aux}`;
-
-  const blocks = buildData();
-  let data = blocks;
-  let meta = 'Todas las compras';
-
-  if (modo === 'hoy') {
-    const hoy = todayISO();
-    data = blocks.filter((b) => b.fechaISO === hoy);
-    meta = `Hoy ${hoy}`;
+/* ===================== Agrupar por fecha (todas las compras) ===================== */
+/** 
+ * Suma cantidades de UNA compra aplicando la misma política que en compra_detalle:
+ * - Solo suma items cuyo nombre se pueda resolver (catálogo/alias/nombre útil)
+ * - Si FORCE_DROP_UNKNOWN=true, los desconocidos NO suman
+ */
+function safePurchaseTotal(compra){
+  const items = Array.isArray(compra?.items) ? compra.items : [];
+  let total = 0;
+  for (const it of items) {
+    const idM = it.id_Material ?? it.id ?? it.material_id;
+    const nombre = resolveMaterialName(idM, it.nombre);
+    if (nombre == null) continue; // se descarta si no se puede nombrar
+    total += Number(it.cantidad || 0);
   }
-  fechaMeta.textContent = meta;
+  return total;
+}
 
-  if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="4" class="empty">${
-      modo === 'hoy' ? 'No hay compras registradas hoy.' : 'No hay compras registradas.'
-    }</td></tr>`;
-    totalesInfo.textContent = '0 materiales';
-    // aviso suave para UX
-    notify(modo === 'hoy' ? 'Sin compras hoy.' : 'Sin registros.', 'info');
+function groupByDateAll(purchases, includePendientes){
+  const map = new Map();
+
+  for(const c of (purchases || [])){
+    const f = iso(c.fecha);
+    if(!f) continue;
+    const cant = safePurchaseTotal(c); // <— mismo criterio que detalle
+    if(!map.has(f)) map.set(f,{ iso:f, ids:[], cantidad:0 });
+    const o = map.get(f);
+    o.ids.push(Number(c.id_compra));
+    o.cantidad += cant;
+  }
+
+  if(includePendientes){
+    for(const p of (getPendLocal() || [])){
+      const f = iso(p.fechaISO);
+      if(!f) continue;
+
+      // Intento resolver nombre del pendiente también
+      const idM = p.id_Material ?? p.id ?? p.material_id;
+      const nombre = resolveMaterialName(idM, p.nombre);
+      const cantPend = (nombre == null) ? 0 : Number(p.cantidad || 0);
+
+      if(!map.has(f)) map.set(f,{ iso:f, ids:[], cantidad:0 });
+      map.get(f).cantidad += cantPend;
+    }
+  }
+
+  const arr = Array.from(map.values());
+  arr.forEach(v=>{
+    v.idRef = v.ids.length ? v.ids.reduce((m,x)=>Math.min(m,x), Infinity) : null;
+  });
+  return arr.sort((a,b)=> b.iso.localeCompare(a.iso)); // más recientes primero
+}
+
+/* ===================== Render ===================== */
+function renderGroupedRows(grouped){
+  const tb = document.getElementById("tbodyRecibo");
+  if (!tb) return;
+
+  if(!grouped.length){
+    tb.innerHTML = `<tr><td colspan="3" class="empty">No hay compras registradas.</td></tr>`;
     return;
   }
 
-  const rows = [];
-  let totalMateriales = 0;
+  tb.innerHTML = grouped.map(g=>{
+    const idText = (g.idRef !== null) ? String(g.idRef) : "—";
+    const link = `<a href="./compra-detalle.html?fecha=${encodeURIComponent(g.iso)}"
+                    title="Ver materiales de ese día"
+                    style="text-decoration:none; color:#7a0000; font-weight:800">${idText}</a>`;
+    return `<tr>
+      <td style="text-align:center">${link}</td>
+      <td>${g.cantidad}</td>
+      <td>${isoToDMY(g.iso)}</td>
+    </tr>`;
+  }).join("");
+}
 
-  for (const block of data) {
-    const { id_compra, fechaISO, items = [] } = block;
-    totalMateriales += items.length;
+/* ===================== Filtro / Búsqueda ===================== */
+/**
+ * Acepta:
+ *  - d, dd, dd/mm, dd/mm/aaaa
+ *  - cualquier cadena con dígitos (p.ej. "9" => días 09,19,29; "11" => 11/.., etc.)
+ */
+function filterByQuery(grouped, qRaw){
+  const q = (qRaw || "").trim();
+  if (!q) return grouped;
 
-    items.forEach((it, idx) => {
-      const m = mats.find((mm) => mm.id_Material === it.id_Material);
-      const nombre = m ? m.nombre : `Material #${it.id_Material}`;
+  // patrón de fecha flexible: d, dd, dd/mm, dd/mm/aaaa
+  const m = q.match(/^(\d{1,2})(?:\/(\d{1,2})(?:\/(\d{4}))?)?$/);
 
-      rows.push(`
-        <tr>
-          ${
-            idx === 0
-              ? `<td rowspan="${items.length}" style="border-right:1px solid #e5e7eb;text-align:center;"><strong>${id_compra}</strong></td>`
-              : ''
-          }
-          <td>${nombre}</td>
-          <td>${it.cantidad}</td>
-          <td>${fechaISO}</td>
-        </tr>
-      `);
+  if (m){
+    const dWanted = String(m[1]).padStart(2,"0");
+    const mWanted = m[2] ? String(m[2]).padStart(2,"0") : null;
+    const yWanted = m[3] || null;
+
+    return grouped.filter(g=>{
+      const [d,mm,yy] = isoToDMY(g.iso).split("/");
+      if (!mWanted) {
+        // solo día: contiene esos dígitos (permite "9" => 09,19,29)
+        return d.includes(dWanted);
+      }
+      if (!yWanted) {
+        // día y mes exactos
+        return d === dWanted && mm === mWanted;
+      }
+      // día, mes y año exactos
+      return d === dWanted && mm === mWanted && yy === yWanted;
     });
   }
 
-  tbody.innerHTML = rows.join('');
-  totalesInfo.textContent = `${totalMateriales} ${totalMateriales === 1 ? 'material' : 'materiales'}`;
+  // Si no es formato dd/... usamos "contiene dígitos" en la fecha DMY
+  const onlyDigits = q.replace(/\D/g,"");
+  if (!onlyDigits) return grouped;
+
+  return grouped.filter(g=>{
+    const dmy = isoToDMY(g.iso).replace(/\D/g,""); // "ddmmyyyy"
+    return dmy.includes(onlyDigits);
+  });
 }
 
-/* ===============================
-   Init + listeners
-   =============================== */
-document.addEventListener('DOMContentLoaded', () => {
-  const btnToggle = document.getElementById('btnVerTodas');
-  let modo = 'hoy';
+/* ===================== Cargar ===================== */
+async function loadAndRender(){
+  const auxInfo = document.getElementById("auxInfo");
+  const totales = document.getElementById("totalesInfo");
+  const meta    = document.getElementById("fechaMeta");
+  const qInput  = document.getElementById("qFecha");
+  const btnBuscar = document.getElementById("btnBuscar");
 
-  const setBtnText = () => {
-    btnToggle.innerHTML =
-      modo === 'hoy'
-        ? `<i class="fa-solid fa-table-list"></i> Ver todas`
-        : `<i class="fa-solid fa-calendar-day"></i> Ver hoy`;
-  };
+  try {
+    meta.textContent = "Todas las compras";
+    auxInfo.textContent = `Auxiliar: ${getAuxLocal()}`;
 
-  renderRecibo({ modo });
-  setBtnText();
+    let grouped = groupByDateAll(getComprasLocal(), true);
+    renderGroupedRows(grouped);
+    if (totales) totales.textContent = `${grouped.length} ${grouped.length===1?"registro":"registros"}`;
 
-  btnToggle?.addEventListener('click', () => {
-    modo = modo === 'hoy' ? 'todas' : 'hoy';
-    setBtnText();
-    renderRecibo({ modo });
-    notify(modo === 'hoy' ? 'Mostrando compras de hoy.' : 'Mostrando todas las compras.', 'info');
+    const applyFilter = ()=>{
+      const q = qInput?.value || "";
+      const data = filterByQuery(grouped, q);
+      renderGroupedRows(data);
+      if (totales) totales.textContent = `${data.length} ${data.length===1?"registro":"registros"}`;
+      meta.textContent = q ? `Filtro: ${q}` : "Todas las compras";
+    };
+
+    btnBuscar?.addEventListener("click", (e)=>{ e.preventDefault(); applyFilter(); });
+    qInput?.addEventListener("input", applyFilter);
+    qInput?.addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); applyFilter(); }});
+
+    // Auto-refresh si cambian datos en otra pestaña
+    window.addEventListener("storage",(e)=>{
+      if ([LS.compras, LS.pendientes].includes(e.key)) {
+        grouped = groupByDateAll(getComprasLocal(), true);
+        const q = qInput?.value || "";
+        const data = filterByQuery(grouped, q);
+        renderGroupedRows(data);
+        if (totales) totales.textContent = `${data.length} ${data.length===1?"registro":"registros"}`;
+      }
+    });
+
+  } catch (err){
+    console.error("[compras.js] Error:", err);
+    notifyInline("Ocurrió un error al cargar las compras.");
+    if (totales) totales.textContent = "0 registros";
+    if (auxInfo) auxInfo.textContent = "Auxiliar: —";
+    if (meta) meta.textContent = "Todas las compras";
+  }
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  // ✅ Regresar a la página correcta
+  document.getElementById("navBack")?.addEventListener("click", ()=>{
+    window.location.href = "./Registro-Compras.html";
   });
 
-  // Auto-refresco cuando cambian compras/pendientes/materiales desde otra pestaña o desde Registro
-  window.addEventListener('storage', (e) => {
-    if ([LS.compras, LS.pendientes, LS.materiales].includes(e.key)) {
-      renderRecibo({ modo });
-      notify('Recibo actualizado.', 'success');
-    }
-  });
+  // Texto provisional mientras pinta:
+  notifyInline("Cargando…");
+  loadAndRender();
 });

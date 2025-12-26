@@ -1,3 +1,19 @@
+"use strict";
+
+/* =========================================
+   devolucion.js (Alumno)
+   - Usa el mismo préstamo que Prestamos.js:
+       LE_prestamo_status
+       LE_prestamo_data
+   - Solo marca que el alumno ya devolvió el material:
+       devuelto_solicitado = true
+========================================= */
+
+const D_KEYS = {
+  STATUS: "LE_prestamo_status",
+  DATA:   "LE_prestamo_data"
+};
+
 /* ========== NOTICE ========== */
 function showNotice({title="Listo", message="", type="info", duration=2000}={}){
   const host = document.getElementById('noticeHost');
@@ -16,32 +32,27 @@ function showNotice({title="Listo", message="", type="info", duration=2000}={}){
   host.onclick=()=>{clearTimeout(t);host.classList.remove('show');host.innerHTML='';};
 }
 
-const ACTIVE_LOAN_KEY  = 'LE_prestamo_activo';
-const ACTIVE_LOAN_DATA = 'LE_prestamo_data';
-const DEV_HISTORY_KEY  = 'LE_historial_devoluciones';
+/* ========== HELPERS ========== */
+const dReadJSON = (k, fb=null)=>{ try{ return JSON.parse(localStorage.getItem(k)||"null") ?? fb; }catch{ return fb; } };
+const dSetJSON  = (k,v)=> localStorage.setItem(k, JSON.stringify(v));
 
 function getLoan(){
-  try { return JSON.parse(localStorage.getItem(ACTIVE_LOAN_DATA) || '{}'); } catch { return {}; }
-}
-function setLoanActive(active){
-  localStorage.setItem(ACTIVE_LOAN_KEY, active ? '1' : '0');
-}
-function pushHistory(entry){
-  let arr = [];
-  try { arr = JSON.parse(localStorage.getItem(DEV_HISTORY_KEY) || '[]'); } catch { arr = []; }
-  arr.push(entry);
-  localStorage.setItem(DEV_HISTORY_KEY, JSON.stringify(arr));
+  return dReadJSON(D_KEYS.DATA, {}) || {};
 }
 
+/* Pinta la lista de materiales prestados */
 function renderPrestamo(){
   const lista = document.getElementById('listaPrestamos');
   if (!lista) return;
-  const loan = getLoan();
-  const items = Array.isArray(loan?.items) ? loan.items : [];
 
-  lista.innerHTML = '';
-  if (!items.length){
-    lista.innerHTML = `<div class="item" style="justify-content:center;color:#777">No hay materiales pendientes.</div>`;
+  const status = localStorage.getItem(D_KEYS.STATUS) || "";
+  const loan   = getLoan();
+  const items  = Array.isArray(loan?.items) ? loan.items : [];
+
+  lista.innerHTML = "";
+  if (status !== "en_curso" || !items.length){
+    lista.innerHTML = `<div class="item" style="justify-content:center;color:#777">No hay materiales pendientes por devolver.</div>`;
+    document.getElementById('btnConfirmar')?.setAttribute('disabled', 'true');
     return;
   }
 
@@ -50,52 +61,75 @@ function renderPrestamo(){
     row.className = 'item';
     row.innerHTML = `
       <i class="fa-solid fa-clipboard-list icono"></i>
-      <input type="text" value="${it.descripcion}  —  x${it.cantidad}" readonly>
+      <input type="text" value="${(it.descripcion || it.material || 'Material')}  —  x${it.cantidad}" readonly>
     `;
     lista.appendChild(row);
   });
 }
 
+/* Autocompletar Materia, Maestro y Mesa desde el préstamo */
+function fillMetaFromLoan(){
+  const loan = getLoan();
+
+  const materia = document.getElementById('materia');
+  const maestro = document.getElementById('maestro');
+  const mesa    = document.getElementById('mesa');
+
+  if (materia){ materia.value = loan?.materia || ""; materia.readOnly = true; materia.placeholder=""; }
+  if (maestro){ maestro.value = loan?.maestro || ""; maestro.readOnly = true; maestro.placeholder=""; }
+  if (mesa){    mesa.value    = loan?.mesa    || ""; mesa.readOnly    = true; mesa.placeholder=""; }
+
+  const status = localStorage.getItem(D_KEYS.STATUS) || "";
+  if (status !== "en_curso" || !Array.isArray(loan?.items) || !loan.items.length){
+    document.getElementById('btnConfirmar')?.setAttribute('disabled','true');
+    showNotice({title:"Sin préstamo activo", message:"No hay materiales para devolver.", type:"warn", duration:2200});
+  }
+}
+
 document.addEventListener('DOMContentLoaded', ()=>{
-  // fecha por defecto
+  // Fecha por defecto = hoy (YYYY-MM-DD)
   const f = document.getElementById('fecha');
   if (f){
-    const d = new Date(); const mm = String(d.getMonth()+1).padStart(2,'0'); const dd = String(d.getDate()).padStart(2,'0');
+    const d = new Date();
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
     f.value = `${d.getFullYear()}-${mm}-${dd}`;
   }
 
-  // Pinta los materiales prestados
+  // Pinta materiales y completa meta desde el préstamo guardado
   renderPrestamo();
+  fillMetaFromLoan();
 
   // Confirmar devolución
   document.getElementById('btnConfirmar')?.addEventListener('click', ()=>{
-    const materia = document.getElementById('materia').value.trim();
-    const maestro = document.getElementById('maestro').value.trim();
-    const mesa    = document.getElementById('mesa').value.trim();
-    if(!materia || !maestro || !mesa){
-      showNotice({title:'Campos incompletos', message:'Completa todos los campos.', type:'warn'});
+    const status = localStorage.getItem(D_KEYS.STATUS) || "";
+    const loan   = getLoan();
+
+    if (status !== "en_curso" || !loan || !Array.isArray(loan.items) || !loan.items.length){
+      showNotice({title:'Nada que devolver', message:'No hay préstamo activo.', type:'warn'});
       return;
     }
 
-    const payload = getLoan();
-    // guarda historial
-    pushHistory({
-      devueltoEn: new Date().toISOString(),
-      materia, maestro, mesa,
-      prestamo: payload
-    });
+    const fechaDev = document.getElementById('fecha')?.value || new Date().toISOString().slice(0,10);
 
-    // limpia préstamo activo
-    setLoanActive(false);
-    localStorage.removeItem(ACTIVE_LOAN_DATA);
+    const actualizado = {
+      ...loan,
+      devuelto_solicitado: true,
+      devuelto_en: new Date().toISOString(),
+      devolucion_meta: {
+        fecha: fechaDev
+      }
+    };
 
-    showNotice({title:'Devolución registrada', message:'Gracias por devolver el material.', type:'success'});
-    setTimeout(()=> window.location.href = 'alumnos-inicial.html', 1200);
+    dSetJSON(D_KEYS.DATA, actualizado);
+
+    showNotice({title:'Devolución registrada', message:'Espera a que el auxiliar revise el material.', type:'success'});
+    setTimeout(()=> window.location.href = '../alumnos-inicial.html', 1200);
   });
 
   // Cancelar → menú
   document.getElementById('btnCancelar')?.addEventListener('click', ()=>{
     showNotice({title:'Cancelado', message:'Regresando al menú…', type:'info', duration:1200});
-    setTimeout(()=> window.location.href = 'alumnos-inicial.html', 900);
+    setTimeout(()=> window.location.href = '../alumnos-inicial.html', 900);
   });
 });

@@ -1,17 +1,23 @@
+/* =========================================================
+   CARRERAS – CRUD + Validación ULTRA-ESTRICTA + confirm al salir
+   TecNM – Laboratorio de Electrónica Analógica
+========================================================= */
+
 const tabla        = document.getElementById("tabla-carreras");
 const inputNombre  = document.getElementById("nombre");
 
 const btnGuardar    = document.querySelector(".guardar");
 const btnActualizar = document.querySelector(".actualizar");
 const btnEliminar   = document.querySelector(".eliminar");
+const homeLink      = document.querySelector(".iconos .icono"); // casita
 
 let carreras = [];
-let idSeleccionado   = null;   // id de la fila seleccionada (null = modo Nueva)
-let nombreOriginal   = "";     // nombre original de la fila seleccionada (para detectar "dirty")
+let idSeleccionado = null;
+let nombreOriginal = "";
 
 const API = "/backend/carreras.php";
 
-/* ========== Toast ========== */
+/* ========= Toast ========= */
 function showToast(message, type = "info", duration = 2200) {
   const host = document.getElementById("toast");
   if (!host) { alert(message); return; }
@@ -27,7 +33,7 @@ function showToast(message, type = "info", duration = 2200) {
   host.onclick = () => { clearTimeout(t); hide(); };
 }
 
-/* ========== Confirm ========== */
+/* ========= Confirm ========= */
 function showConfirm(texto) {
   const modal     = document.getElementById("confirm");
   const card      = modal?.querySelector(".confirm-card");
@@ -65,7 +71,7 @@ function showConfirm(texto) {
   });
 }
 
-/* ========== Fetch helper ========== */
+/* ========= Fetch helper ========= */
 async function fetchJson(url, options = {}) {
   const res = await fetch(url, options);
   let data; try { data = await res.json(); } catch { data = {}; }
@@ -74,14 +80,258 @@ async function fetchJson(url, options = {}) {
   return data;
 }
 
-/* ========== Normalizador para comparar nombres ========== */
-const norm = s => (s||"").normalize("NFKC").trim().toLowerCase().replace(/\s+/g," ");
+/* =========================================================
+   NORMALIZACIÓN, TOKENS, EQUIVALENCIAS y CLAVE DE ESPECIALIDAD
+========================================================= */
 
-/* ========== Estados de botones (máquina de estados) ========== */
+function normalizeBase(s){
+  return (s||"")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g," ")
+    .trim();
+}
+
+const STOP = new Set([
+  "de","del","la","el","los","las","en","y","e","para","por","con","a",
+  "facultad","universidad","tecnologico","tecnologia","tecnologias",
+  "tecnico","tecnica",
+  "licenciatura","licenciaturas","departamento","division",
+  "ingenieria","ing","ing.","carrera","carreras"
+]);
+
+function toSingular(w){
+  if (w.length <= 3) return w;
+  if (w.endsWith("es") && w.length > 4) return w.slice(0,-2);
+  if (w.endsWith("s")  && w.length > 3) return w.slice(0,-1);
+  return w;
+}
+
+/* Sinónimos / canónicos (tokens sueltos) */
+const ALIAS = new Map([
+  // SISTEMAS
+  ["sistema","sistemas"], ["sistemas","sistemas"], ["sistem","sistemas"],
+  ["computacion","sistemas"], ["computacional","sistemas"], ["computacionales","sistemas"],
+  ["computador","sistemas"], ["computadores","sistemas"],
+  ["informatica","sistemas"], ["informatico","sistemas"], ["informaticos","sistemas"],
+  ["software","sistemas"], ["programacion","sistemas"],
+  ["ti","sistemas"], ["tic","sistemas"], ["tics","sistemas"],
+
+  // ELECTRÓNICA (≠ ELÉCTRICA)
+  ["electronica","electronica"], ["electronicas","electronica"],
+
+  // ELÉCTRICA (separada)
+  ["electrica","electrica"], ["electricas","electrica"],
+
+  // TELECOM
+  ["telecomunicaciones","telecom"], ["telecom","telecom"],
+
+  // Otros ejemplos
+  ["mecanica","mecanica"], ["mecatronica","mecatronica"],
+  ["industrial","industrial"], ["quimica","quimica"]
+]);
+
+function canonicalRewrites(s){
+  return s
+    .replace(/\bsistemas?\s+computacionales?\b/g, "sistemas")
+    .replace(/\btecnologias?\s+de\s+la?\s* informacion\b/g, "sistemas")
+    .replace(/\btecnologia\s+de\s+la?\s* informacion\b/g, "sistemas")
+    .replace(/\by\b/g, " ");
+}
+
+function stripGenericPrefixes(s){
+  return s
+    .replace(/\b(ing\.?|ingenieria|licenciatura|tecnico|tecnica)\b/g, " ")
+    .replace(/\b(en|de|del|la|el|los|las|para|por|con|a)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/* Prefijos (raíces incompletas) */
+function canonByPrefix(base){
+  // SISTEMAS
+  if (base.startsWith("sist")) return "sistemas";
+  if (base.startsWith("compu")) return "sistemas";
+  if (base.startsWith("infor")) return "sistemas";
+  if (base.startsWith("progr")) return "sistemas";
+  if (base === "ti" || base === "tic" || base === "tics") return "sistemas";
+
+  // ELECTRÓNICA vs ELÉCTRICA
+  if (base.startsWith("electro"))   return "electronica";
+  if (base.startsWith("electron"))  return "electronica";
+  if (base.startsWith("electric"))  return "electrica";
+
+  // TELECOM
+  if (base.startsWith("telecom")) return "telecom";
+  if (base.startsWith("telecomunic")) return "telecom";
+
+  return null;
+}
+
+function canonToken(t){
+  const base = toSingular(t);
+  if (ALIAS.has(base)) return ALIAS.get(base);
+  const pref = canonByPrefix(base);
+  if (pref) return pref;
+  return base;
+}
+
+function keyTokens(s){
+  let base = normalizeBase(s);
+  base = canonicalRewrites(base);
+  base = stripGenericPrefixes(base);
+  return base.split(" ")
+    .filter(t => t && t.length >= 3 && !STOP.has(t))
+    .map(toSingular)
+    .map(canonToken);
+}
+
+function specialtyKey(nombre){
+  const tokens = keyTokens(nombre);
+  const uniq = Array.from(new Set(tokens)).sort();
+  return uniq.join("-");
+}
+
+/* Pares que deben ser distintos SIEMPRE */
+const DISTINCT_PAIRS = new Set([
+  "electronica|electrica","electrica|electronica",
+  "electronica|telecom","telecom|electronica",
+  "electrica|telecom","telecom|electrica"
+]);
+
+function areDistinctSpecialties(a, b){
+  const ca = canonToken(a), cb = canonToken(b);
+  return DISTINCT_PAIRS.has(`${ca}|${cb}`);
+}
+
+/* ===== similitud extra ===== */
+function isSubsetTokens(tokensA, tokensB){
+  return tokensA.every(t => tokensB.includes(t));
+}
+
+function jaccard(aTokens, bTokens){
+  const A = new Set(aTokens);
+  const B = new Set(aTokens.constructor === Set ? [...aTokens] : bTokens);
+  let inter = 0;
+  A.forEach(t => { if (B.has(t)) inter++; });
+  const union = A.size + B.size - inter;
+  return union === 0 ? 0 : inter / union;
+}
+
+function editDistance(a, b){
+  const n = a.length, m = b.length;
+  if (n === 0) return m;
+  if (m === 0) return n;
+  const dp = Array.from({length: n+1}, () => new Array(m+1).fill(0));
+  for (let i=0;i<=n;i++) dp[i][0]=i;
+  for (let j=0;j<=m;j++) dp[0][j]=j;
+  for (let i=1;i<=n;i++){
+    for (let j=1;j<=m;j++){
+      const cost = a[i-1] === b[j-1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i-1][j] + 1,
+        dp[i][j-1] + 1,
+        dp[i-1][j-1] + cost
+      );
+    }
+  }
+  return dp[n][m];
+}
+
+function commonPrefixLen(a, b){
+  const L = Math.min(a.length, b.length);
+  let k = 0;
+  while (k < L && a[k] === b[k]) k++;
+  return k;
+}
+
+function tokensEquivalent(a, b){
+  const ca = canonToken(a);
+  const cb = canonToken(b);
+  if (ca === cb) return true;
+  return editDistance(ca, cb) <= 1;
+}
+
+function tokensPrefixSimilar(a, b){
+  const ca = canonToken(a);
+  const cb = canonToken(b);
+  if (areDistinctSpecialties(ca, cb)) return false;
+  const minLen = Math.min(ca.length, cb.length);
+  if (minLen < 5) return false;
+  return ca.startsWith(cb) || cb.startsWith(ca) || commonPrefixLen(ca, cb) >= 5;
+}
+
+function anySimilarToken(tokensA, tokensB){
+  for (const ta of tokensA){
+    for (const tb of tokensB){
+      if (areDistinctSpecialties(ta, tb)) continue;
+      if (tokensEquivalent(ta, tb) || tokensPrefixSimilar(ta, tb)) return true;
+    }
+  }
+  return false;
+}
+
+/* =========================================================
+   Duplicados / Equivalencias
+========================================================= */
+function existeParecida(nombreNuevo, idIgnorar = null){
+  const baseNuevo   = normalizeBase(nombreNuevo);
+  const keyNuevo    = specialtyKey(nombreNuevo);
+  const tokensNuevo = keyTokens(nombreNuevo);
+
+  let mejorMatch = null;
+  let mejorScore = 0;
+
+  for (const c of carreras){
+    if (idIgnorar != null && c.id_Carrera === idIgnorar) continue;
+
+    const baseExist   = normalizeBase(c.nombre);
+    const keyExist    = specialtyKey(c.nombre);
+    const tokensExist = keyTokens(c.nombre);
+
+    if (baseExist === baseNuevo){
+      return { existe:true, con: c.nombre, motivo:"igual" };
+    }
+    if (keyExist && keyExist === keyNuevo){
+      return { existe:true, con: c.nombre, motivo:"misma_especialidad" };
+    }
+    if (anySimilarToken(tokensNuevo, tokensExist)){
+      return { existe:true, con: c.nombre, motivo:"muy_parecida" };
+    }
+    if (tokensNuevo.length && tokensExist.length &&
+        (isSubsetTokens(tokensNuevo, tokensExist) || isSubsetTokens(tokensExist, tokensNuevo))){
+      return { existe:true, con: c.nombre, motivo:"muy_parecida" };
+    }
+
+    const score = jaccard(tokensNuevo, tokensExist);
+    if (score > mejorScore){
+      mejorScore = score;
+      mejorMatch = c.nombre;
+    }
+  }
+
+  if (mejorScore >= 0.70){
+    return { existe:true, con: mejorMatch, motivo:"muy_parecida" };
+  }
+  return { existe:false };
+}
+
+/* =========================================================
+   Estados / UX
+========================================================= */
 function isDirty(){
-  // Cambió el texto respecto al original en modo Edición
   if (idSeleccionado == null) return false;
-  return norm(inputNombre.value) !== norm(nombreOriginal);
+  return normalizeBase(inputNombre.value) !== normalizeBase(nombreOriginal);
+}
+
+/* ¿Hay datos sin guardar o incompletos? (para casita) */
+function hasUnsavedOrIncomplete(){
+  const texto = (inputNombre.value || "").trim();
+  if (idSeleccionado == null){
+    return texto.length > 0; // escribió algo y no guardó
+  }
+  return isDirty(); // está editando y no actualizó
 }
 
 function updateButtonStates(){
@@ -89,47 +339,60 @@ function updateButtonStates(){
 
   if (idSeleccionado == null) {
     // Modo NUEVA
-    btnGuardar.disabled    = !hayTexto;
+    btnGuardar.disabled    = !hayTexto; // solo se habilita si hay texto
     btnActualizar.disabled = true;
     btnEliminar.disabled   = true;
+    btnEliminar.title = "";
     return;
   }
 
   // Modo EDICIÓN
   const changed = isDirty();
-  btnGuardar.disabled    = true;              // no se guarda en edición
-  btnActualizar.disabled = !hayTexto || !changed; // actualizar solo si hay cambios
-  btnEliminar.disabled   = changed;           // si hay cambios => bloqueo de eliminar
-
-  // Si está bloqueado por "dirty", avisito en title (opcional)
+  btnGuardar.disabled    = true;                 // no guardar en edición
+  btnActualizar.disabled = !hayTexto || !changed; // se activa si hay cambios
+  btnEliminar.disabled   = changed;               // activo solo si NO hay cambios
   btnEliminar.title = changed ? "Tienes cambios sin guardar. Actualiza primero." : "";
 }
 
-/* Helpers de selección */
+/* Helpers selección / limpieza */
 function limpiarSeleccion(){
   [...tabla.querySelectorAll("tr")].forEach(tr => tr.classList.remove("seleccionada"));
   idSeleccionado = null;
   nombreOriginal = "";
-  inputNombre.value = "";
-  updateButtonStates();
+  inputNombre.value = "";                         // ← limpia el cuadro
+  updateButtonStates();                           // ← desactiva botones según modo NUEVA
 }
+
 function seleccionarFilaVisual(fila){
   [...tabla.querySelectorAll("tr")].forEach(tr => tr.classList.remove("seleccionada"));
   fila?.classList.add("seleccionada");
 }
 
-/* ========== Cargar al iniciar ========== */
+/* =========================================================
+   Carga inicial + casita con confirmación
+========================================================= */
 document.addEventListener("DOMContentLoaded", async () => {
   await cargarCarreras();
   updateButtonStates();
+
   inputNombre.addEventListener("input", () => {
-    // Mostrar “modo escribiendo”
-    if (idSeleccionado == null) {
-      // Nueva: habilitar Guardar cuando hay texto
-      updateButtonStates();
+    updateButtonStates();
+  });
+
+  // Confirmación al salir por la casita si hay datos sin guardar/incompletos
+  homeLink?.addEventListener("click", async (e) => {
+    if (!hasUnsavedOrIncomplete()) return; // sin cambios -> salir normal
+    e.preventDefault();
+
+    const motivo = (idSeleccionado == null)
+      ? "Tienes datos sin guardar en el formulario."
+      : "Tienes cambios sin guardar en la carrera seleccionada.";
+
+    const ok = await showConfirm(`${motivo}\nSi sales ahora, perderás los datos.\n\n¿Deseas salir igualmente?`);
+    if (ok){
+      window.location.href = homeLink.href;
     } else {
-      // Edición: si cambias, habilita Actualizar y bloquea Eliminar
-      updateButtonStates();
+      showToast("Edición conservada. Continúa donde te quedaste.", "info", 2000);
     }
   });
 });
@@ -144,31 +407,34 @@ async function cargarCarreras() {
   }
 }
 
-/* ========== Render tabla ========== */
+/* Render tabla */
 function mostrarTabla() {
   tabla.innerHTML = "";
   carreras.forEach(c => {
     const tr = document.createElement("tr");
     tr.innerHTML = `<td>${c.nombre}</td>`;
     tr.onclick = () => {
-      // Selección -> entrar a modo EDICIÓN
       seleccionarFilaVisual(tr);
       idSeleccionado = c.id_Carrera;
       nombreOriginal = c.nombre;
-      inputNombre.value = c.nombre;
-      updateButtonStates(); // aquí se habilita Eliminar y (si no cambiaste) Actualizar queda gris
+      inputNombre.value = c.nombre;  // ← autocompleta
+      updateButtonStates();          // ← habilita Eliminar, desactiva Actualizar hasta cambio
     };
     tabla.appendChild(tr);
   });
 }
 
-/* ========== Guardar ========== */
+/* =========================================================
+   Guardar (modo NUEVA)
+========================================================= */
 btnGuardar.addEventListener("click", async () => {
   const nombre = (inputNombre.value || "").trim();
   if (!nombre) { showToast("Ingresa un nombre de carrera.", "info"); return; }
 
-  if (carreras.some(c => norm(c.nombre) === norm(nombre))) {
-    showToast("❗ Esa carrera ya existe.", "info"); return;
+  const dup = existeParecida(nombre, null);
+  if (dup.existe){
+    showToast(`❗ Ya existe una carrera equivalente o muy parecida: “${dup.con}”.`, "warn", 4200);
+    return;
   }
 
   try {
@@ -178,76 +444,65 @@ btnGuardar.addEventListener("click", async () => {
       body: JSON.stringify({ nombre })
     });
 
-    showToast("✅ Guardado. Ahora puedes actualizar o eliminar.", "success");
-
-    // Añadir en memoria y re-render
+    // Actualiza memoria/UI
     const nuevo = { id_Carrera: data.id_Carrera, nombre: data.nombre || nombre };
     carreras.push(nuevo);
     mostrarTabla();
 
-    // Seleccionar automáticamente la nueva fila -> pasa a modo EDICIÓN
-    const filas = [...tabla.querySelectorAll("tr")];
-    const idx   = carreras.findIndex(x => x.id_Carrera === nuevo.id_Carrera);
-    if (idx !== -1) {
-      seleccionarFilaVisual(filas[idx]);
-      idSeleccionado = nuevo.id_Carrera;
-      nombreOriginal = nuevo.nombre;
-      inputNombre.value = nuevo.nombre;
-    } else {
-      // fallback si no localiza la fila
-      idSeleccionado = nuevo.id_Carrera;
-      nombreOriginal = nuevo.nombre;
-      inputNombre.value = nuevo.nombre;
-    }
-    updateButtonStates(); // en edición: Eliminar ON, Actualizar OFF (gris)
+    // UX pedido: limpiar cuadro y dejar todo desactivado (modo NUEVA limpio)
+    limpiarSeleccion();
+
+    showToast("✅ Guardado.", "success");
 
   } catch (err) {
     showToast(err.message, "error", 3200);
   }
 });
 
-/* ========== Actualizar ========== */
+/* =========================================================
+   Actualizar (modo EDICIÓN)
+========================================================= */
 btnActualizar.addEventListener("click", async () => {
   if (idSeleccionado == null) { showToast("Selecciona una carrera primero.", "info"); return; }
   const nombre = (inputNombre.value || "").trim();
   if (!nombre) { showToast("Ingresa el nuevo nombre.", "info"); return; }
 
-  if (carreras.some(c => c.id_Carrera !== idSeleccionado && norm(c.nombre) === norm(nombre))) {
-    showToast("❗ Ya existe otra carrera con ese nombre.", "info"); return;
+  const dup = existeParecida(nombre, idSeleccionado);
+  if (dup.existe){
+    showToast(`❗ Ya existe una carrera equivalente o muy parecida: “${dup.con}”.`, "warn", 4200);
+    return;
   }
 
   try {
-    const data = await fetchJson(API, {
+    await fetchJson(API, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id_Carrera: idSeleccionado, nombre })
     });
 
-    // Actualiza memoria y UI
     const idx = carreras.findIndex(x => x.id_Carrera === idSeleccionado);
     if (idx !== -1) carreras[idx].nombre = nombre;
     mostrarTabla();
 
-    showToast("✏️ Actualizada. Volviendo a modo nuevo.", "success");
-
-    // “se quita y se pone todo gris”
+    // Después de actualizar, volvemos a modo NUEVA (limpio y botones desactivados)
     limpiarSeleccion();
+    showToast("✏️ Actualizada.", "success");
 
   } catch (err) {
     showToast(err.message, "error", 3200);
   }
 });
 
-/* ========== Eliminar (con bloqueo si hay cambios) ========== */
+/* =========================================================
+   Eliminar
+========================================================= */
 btnEliminar.addEventListener("click", async () => {
   if (idSeleccionado == null) { showToast("Selecciona una carrera primero.", "info"); return; }
-
   if (isDirty()) {
     showToast("No puedes eliminar: estás editando esta carrera. Presiona ACTUALIZAR primero.", "warn", 3200);
     return;
   }
 
-  // Tomar nombre visible para el mensaje
   const filaSel = [...tabla.querySelectorAll("tr")].find(tr => tr.classList.contains("seleccionada"));
   const nombreSel = filaSel ? filaSel.textContent.trim() : "esta carrera";
 
@@ -258,14 +513,12 @@ btnEliminar.addEventListener("click", async () => {
     const params = new URLSearchParams({ id_Carrera: String(idSeleccionado) });
     const data = await fetchJson(`${API}?${params.toString()}`, { method: "DELETE" });
 
-    // Quitar de memoria y re-render
     carreras = carreras.filter(c => c.id_Carrera !== idSeleccionado);
     mostrarTabla();
 
-    showToast(data.mensaje || "🗑️ Carrera eliminada", "success");
-
-    // Volver a modo nuevo
+    // Tras eliminar, también volvemos a modo NUEVA (input limpio y botones desactivados)
     limpiarSeleccion();
+    showToast(data.mensaje || "🗑️ Carrera eliminada", "success");
 
   } catch (err) {
     showToast(err.message || "No se pudo eliminar.", "error");
