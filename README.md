@@ -7,15 +7,12 @@ Este proyecto trata sobre la automatización del proceso de préstamos del labor
 El propósito principal del sistema es mejorar la gestión de los préstamos de material del laboratorio, facilitando el registro, control y seguimiento del inventario, así como agilizar el proceso tanto para estudiantes como para los encargados del laboratorio.
 
 ## Requisitos
-Para poder ejecutar este proyecto es necesario contar con:
-- Una computadora con sistema operativo Windows, Linux o macOS
-- [Aquí pones el lenguaje o herramienta que uses, por ejemplo:]
-  - Java / Python / Node.js / MySQL (según aplique)
-- Un editor de código o IDE (por ejemplo: Visual Studio Code, NetBeans, IntelliJ, etc.)
+
 
 ## Instalación
 1. Clonar el repositorio desde GitHub:
    ```bash
    git clone https://github.com/usuario/ProyectoLaboratorioElectronica.git
+
 
 
