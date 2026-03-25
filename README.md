@@ -56,14 +56,7 @@ npm start
 ## 📷 Capturas del sistema
 
 ### Login
-![Login]
 <img width="1360" height="645" alt="Screenshot_1249" src="https://github.com/user-attachments/assets/48ac8b37-fddc-4aaf-8d45-71be57ea36f5" />
-
-### Inventario
-![Inventario](images/inventario.png)
-
-### Préstamos
-![Prestamos](images/prestamos.png)
 
 ## 👨‍💻 Equipo de desarrollo
 
