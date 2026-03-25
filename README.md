@@ -64,14 +64,12 @@ npm start
 ### Préstamos
 ![Prestamos](images/prestamos.png)
 
-## Equipo de desarrollo
+## 👨‍💻 Equipo de desarrollo
 
-### Responsable principal:
+### 👤 Responsable principal
+- **Roberto Aram López Rodríguez**
 
-## Roberto Aram López Rodríguez
-
-### Colaboradores:
-
-## Luis050313
-## Motitauwu
-## pawis0208
+### 🤝 Colaboradores  
+- 👤 Luis050313  
+- 👤 Motitauwu  
+- 👤 pawis0208  
