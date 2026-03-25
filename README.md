@@ -42,5 +42,24 @@ Frontend (Angular) → API REST (Node.js + Express) → Base de datos (MySQL)
 ## 📦 Instalación y ejecución
 
 1. Clonar el repositorio:
-```bash
+```bash```
 git clone https://github.com/Robert1401/sistema-laboratorio-electronica.git
+
+2. Instalar dependencias:
+```bash```
+npm install
+
+3. Ejecutar el servidor:
+```bash```
+npm start
+
+## 📷 Capturas del sistema
+
+### Login
+![Login](images/login.png)
+
+### Inventario
+![Inventario](images/inventario.png)
+
+### Préstamos
+![Prestamos](images/prestamos.png)
