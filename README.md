@@ -1,18 +1,46 @@
-# ProyectoLaboratorioElectronica
+# Sistema de Gestión de Laboratorio de Electrónica Analógica
 
-## Descripción
-Este proyecto trata sobre la automatización del proceso de préstamos del laboratorio de Electrónica Analógica del Instituto Tecnológico de Saltillo, cuyo objetivo es optimizar la fase de préstamo de material para las prácticas de los estudiantes. Asimismo, busca reducir el trabajo manual que realizan los encargados de los laboratorios y permitir un mayor control del inventario del material.
+## 📌 Descripción
+Aplicación web desarrollada para automatizar la gestión de préstamos de material en el laboratorio de Electrónica Analógica del Instituto Tecnológico de Saltillo.
 
-## Propósito
-El propósito principal del sistema es mejorar la gestión de los préstamos de material del laboratorio, facilitando el registro, control y seguimiento del inventario, así como agilizar el proceso tanto para estudiantes como para los encargados del laboratorio.
+El sistema permite mejorar el control del inventario, reducir procesos manuales y facilitar el seguimiento de materiales utilizados en prácticas académicas.
 
-## Requisitos
+---
 
+## 🎯 Objetivo
+Optimizar la administración del laboratorio mediante un sistema digital que permita registrar, controlar y consultar el uso de materiales de forma eficiente.
 
-## Instalación
-1. Clonar el repositorio desde GitHub:
-   ```bash
-   git clone https://github.com/usuario/ProyectoLaboratorioElectronica.git
+---
 
+## 🚀 Funcionalidades
+- Gestión de usuarios (Administrador, Docente, Alumno)
+- Control de inventario de materiales
+- Registro de préstamos y devoluciones
+- Historial de movimientos
+- Control de disponibilidad (disponible, prestado, mantenimiento)
+- Registro de asesorías
+- Reportes básicos
 
+---
 
+## 🛠️ Tecnologías utilizadas
+- Angular (Frontend)
+- Node.js + Express (Backend)
+- MySQL (Base de datos)
+- Docker (Contenedores)
+- Git (Control de versiones)
+
+---
+
+## ⚙️ Arquitectura del sistema
+El sistema sigue una arquitectura de aplicación web basada en cliente-servidor:
+
+Frontend (Angular) → API REST (Node.js + Express) → Base de datos (MySQL)
+
+---
+
+## 📦 Instalación y ejecución
+
+1. Clonar el repositorio:
+```bash
+git clone https://github.com/Robert1401/sistema-laboratorio-electronica.git
